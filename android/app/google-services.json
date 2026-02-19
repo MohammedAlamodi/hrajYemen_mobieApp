@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "272623175483",
+    "project_id": "hraj-hd5",
+    "storage_bucket": "hraj-hd5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:272623175483:android:eeeb304dc1d8be07f6191e",
+        "android_client_info": {
+          "package_name": "com.example.ye_hraj"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAG6_U-0lvr38Ydlm2bfjEO00Fb2YT2gMM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
