@@ -12,18 +12,19 @@ class SettingsScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.current.appBackground,
-      body: SafeArea(
-        child: Column(
-          children: [
-            CustomHeaderBar(
-              title: 'الإعدادات',
-              showSearch: false,
-              onSearchChange: null,
-            ),
+      body: Column(
+        children: [
+          CustomHeaderBar(
+            title: 'الإعدادات',
+            showSearch: false,
+            onSearchChange: null,
+          ),
 
-            SizedBox(height: 16),
+          SizedBox(height: 16),
 
-            Container(
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
@@ -46,8 +47,8 @@ class SettingsScreen extends StatelessWidget {
                 ],
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

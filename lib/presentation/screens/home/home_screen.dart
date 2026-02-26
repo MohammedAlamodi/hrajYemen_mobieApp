@@ -28,12 +28,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
 
+  late HomeViewModel vm;
   @override
   void initState() {
     super.initState();
     // جلب البيانات الأولية عند بدء الصفحة
-    Future.microtask(() =>
-        Provider.of<HomeViewModel>(context, listen: false).getInitialData()
+    vm = Provider.of<HomeViewModel>(context, listen: false);
+
+    Future.microtask(() => vm.getInitialData()
     );
   }
 
@@ -43,85 +45,96 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // نستخدم Consumer للاستماع للتغييرات في الـ VM
-    return Consumer<HomeViewModel>(
-      builder: (context, vm, child) {
-        final s = _uiScale(context);
+    vm = Provider.of<HomeViewModel>(context);
 
-        // حسابات الـ Responsive (نفس الكود السابق)
-        final categoriesListHeight = (100.0 * s).clamp(92.0, 130.0);
-        final categoriesExtent = (categoriesListHeight + (56.0 * s)).clamp(140.0, 190.0);
-        final bannerIconSize = (110.0 * s).clamp(90.0, 150.0);
-        final bannerExtent = (_isTablet(context) ? 190.0 : 175.0) * s;
+    final s = _uiScale(context);
+    // حسابات الـ Responsive (نفس الكود السابق)
+    final categoriesListHeight = (100.0 * s).clamp(92.0, 130.0);
+    final categoriesExtent = (categoriesListHeight + (56.0 * s)).clamp(140.0, 190.0);
+    final bannerIconSize = (110.0 * s).clamp(90.0, 150.0);
+    final bannerExtent = (_isTablet(context) ? 190.0 : 175.0) * s;
 
-        return Scaffold(
-          backgroundColor: AppColors.current.appBackground,
-          body: SafeArea(
-            bottom: false,
-            child: Column(
-              children: [
-                HomeCustomAppBar(),
+    return Scaffold(
+      backgroundColor: AppColors.current.appBackground,
+      body: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            HomeCustomAppBar(),
 
-                Expanded(
-                  // إذا كان تحميل أولي نعرض Loading
-                  child: vm.isLoading
-                      ? const Center(child: CustomLoadingWidget(
-                    text: 'جاري تحميل البيانات...',
-                  ))
-                      : NestedScrollView(
-                    physics: const ClampingScrollPhysics(),
-                    headerSliverBuilder: (context, innerBoxIsScrolled) => [
+            Expanded(
+              // إذا كان تحميل أولي نعرض Loading
+              child: vm.isLoading
+                  ? const Center(child: CustomLoadingWidget(
+                text: 'جاري تحميل البيانات...',
+              ))
+                  : NestedScrollView(
+                physics: const ClampingScrollPhysics(),
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
 
-                      // نفس الـ Headers السابقة تماماً
-                      SliverPersistentHeader(
-                        pinned: false,
-                        delegate: FadeSlideSliverHeaderDelegate(
-                          maxExtentHeight: categoriesExtent,
-                          collapseDistanceFactor: 1.25,
-                          child: ResponsiveCenter(
-                            child: _CategoriesSection(
-                              categories: vm.categories,
-                              listHeight: categoriesListHeight,
-                              scale: s,
-                            ),
-                          ),
-                        ),
-                      ),
-
-                      SliverPersistentHeader(
-                        pinned: false,
-                        delegate: FadeSlideSliverHeaderDelegate(
-                          maxExtentHeight: bannerExtent,
-                          collapseDistanceFactor: 1.25,
-                          child: ResponsiveCenter(
-                            child: _PromoBanner(iconSize: bannerIconSize, scale: s),
-                          ),
-                        ),
-                      ),
-                    ],
-
-                    // تمرير بيانات الـ VM للـ Viewer
-                    body: ResponsiveCenter(
-                      child: Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: ProductListViewer(
-                          title: 'الإعلانات',
-                          products: vm.products, // البيانات من الـ VM
-                          isLoadingMore: vm.isLoadingMore, // حالة تحميل المزيد
-                          onScrollEnd: () {
-                            // عند الوصول للنهاية، اطلب المزيد
-                            vm.loadMoreProducts();
-                          },
+                  // نفس الـ Headers السابقة تماماً
+                  SliverPersistentHeader(
+                    pinned: false,
+                    delegate: FadeSlideSliverHeaderDelegate(
+                      maxExtentHeight: categoriesExtent,
+                      collapseDistanceFactor: 1.25,
+                      child: ResponsiveCenter(
+                        child: _CategoriesSection(
+                          categories: vm.categories,
+                          listHeight: categoriesListHeight,
+                          scale: s,
                         ),
                       ),
                     ),
                   ),
+
+                  SliverPersistentHeader(
+                    pinned: false,
+                    delegate: FadeSlideSliverHeaderDelegate(
+                      maxExtentHeight: bannerExtent,
+                      collapseDistanceFactor: 1.25,
+                      child: ResponsiveCenter(
+                        child: _PromoBanner(iconSize: bannerIconSize, scale: s),
+                      ),
+                    ),
+                  ),
+                ],
+
+                // تمرير بيانات الـ VM للـ Viewer
+                body: ResponsiveCenter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 60),
+                    child:vm.products.isNotEmpty? ProductListViewer(
+                      titleWidget: CustomText(title: 'الإعلانات',),
+                      products: vm.products, // البيانات من الـ VM
+                      isLoadingMore: vm.isLoadingMore, // حالة تحميل المزيد
+                      onScrollEnd: () {
+                        // عند الوصول للنهاية، اطلب المزيد
+                        vm.loadMoreProducts();
+                      },
+                    ) : Center(
+                      child: Column(
+                        children: [
+                          SizedBox(height: 100),
+                          CustomText(
+                            title: 'تعذر تحميل الإعلانات حالياً',
+                            color: AppColors.current.blackGrey,
+                            size: 16,
+                          ),
+                          const SizedBox(height: 8),
+                          IconButton(onPressed: () async {
+                            await vm.getInitialData();
+                          }, icon: Icon(Icons.refresh, color: AppColors.current.primary))
+                        ],
+                      ),
+                    ),
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+          ],
+        ),
+      ),
     );
   }
 }
@@ -265,10 +278,14 @@ class _CategoriesSection extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => const AllCategoriesScreen())
                   );
                 },
-                child: CustomText(
-                  title: 'عرض الكل',
-                  size: titleSize,
-                  color: AppColors.current.primary,
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: CustomText(
+                    title: 'عرض الكل',
+                    size: titleSize,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.current.primary,
+                  ),
                 ),
               ),
             ],

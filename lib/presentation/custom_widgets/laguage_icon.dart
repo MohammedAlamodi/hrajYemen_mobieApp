@@ -39,7 +39,7 @@ class _LanguageIconState extends State<LanguageIcon> {
   Future<void> _loadLanguages() async {
     UserPreferences userPreferences = UserPreferences();
 
-    var language = userPreferences.getString(key: AppStrings.languageKey, defaultValue: 'ar');
+    var language = await userPreferences.getString(key: AppStrings.languageKey, defaultValue: 'ar');
 
     commonViewModel.indexOfSelectedLang = language;
     // indexOfSelectedLang = language;

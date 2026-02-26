@@ -1,174 +1,186 @@
-//
-// import 'package:Taqseet/models/costomer_model.dart';
-// import 'package:Taqseet/models/notification_model.dart';
-//
-// import '../../../configurations/data/api_services.dart';
-// import '../../../configurations/data/end_points_manager.dart';
-// import '../../../configurations/resources/strings_manager.dart';
-// import '../../../configurations/user_preferences.dart';
-// import '../../../models/offer_category_model.dart';
-// import '../../../models/offer_model.dart';
-// import '../../../models/user_role_model.dart';
-//
-// class CommonViewRepository {
-//   CommonViewRepository._internal();
-//
-//   static final CommonViewRepository _singleton =
-//       CommonViewRepository._internal();
-//
-//   factory CommonViewRepository() {
-//     return _singleton;
-//   }
-//
-//   Future<List<UserRolesModel>> getUseRoles(context) {
-//     ApiService().getBaseUrlAndToken();
-//
-//     return ApiService()
-//         .dio
-//         .get(EndPointsStrings.getUserRoleEndPoint)
-//         .then((value) {
-//       var result = ApiService.decodeResp(value);
-//
-//       if (result != null) {
-//         var val = result
-//             .map<UserRolesModel>((e) => UserRolesModel.fromJson(e))
-//             .toList();
-//
-//         return val;
-//       } else {
-//         return [];
-//       }
-//     });
-//   }
-//
-//   Future<List<CustomerModel>> getCustomers(context) {
-//     ApiService().getBaseUrlAndToken();
-//
-//     return ApiService()
-//         .dio
-//         .get(EndPointsStrings.getCustomersEndPoint)
-//         .then((value) {
-//       var result = ApiService.decodeResp(value);
-//
-//       if (result != null) {
-//         var val = result
-//             .map<CustomerModel>((e) => CustomerModel.fromJson(e))
-//             .toList();
-//
-//         return val;
-//       } else {
-//         return [];
-//       }
-//     });
-//   }
-//
-//   Future<List<OfferCategoryModel>> getOfferCategorise(context) {
-//     ApiService().getBaseUrlAndToken();
-//
-//     return ApiService()
-//         .dio
-//         .get(EndPointsStrings.getOfferCategoryEndPoint)
-//         .then((value) {
-//       var result = ApiService.decodeResp(value);
-//       if (result != null) {
-//         var val = result
-//             .map<OfferCategoryModel>((e) => OfferCategoryModel.fromJson(e))
-//             .toList();
-//
-//         return val;
-//       } else {
-//         return [];
-//       }
-//     });
-//   }
-//
-//   Future<List<OfferModel>> getOffers(context) {
-//     ApiService().getBaseUrlAndToken();
-//
-//     return ApiService()
-//         .dio
-//         .get(EndPointsStrings.getOfferEndPoint)
-//         .then((value) {
-//       var result = ApiService.decodeResp(value);
-//       if (result != null) {
-//         var val = result
-//             .map<OfferModel>((e) => OfferModel.fromJson(e))
-//             .toList();
-//
-//         return val;
-//       } else {
-//         return [];
-//       }
-//     });
-//   }
-//
-//   Future<List<NotificationModel>> getNotifications(context) async {
-//
-//     UserPreferences userPreferences = UserPreferences();
-//
-//     String customerId = await userPreferences.getString(key: AppStrings.userIdKey, defaultValue: 'null');
-//
-//     if(customerId != 'null') {
-//       ApiService().getBaseUrlAndToken();
-//
-//       return ApiService()
-//           .dio
-//           .get('${EndPointsStrings.getNotificationsEndPoint}/$customerId')
-//           .then((value) {
-//         var result = ApiService.decodeResp(value);
-//         if (result != null) {
-//           var val = result
-//               .map<NotificationModel>((e) => NotificationModel.fromJson(e))
-//               .toList();
-//
-//           return val;
-//         } else {
-//           return [];
-//         }
-//       });
-//     }
-//     else{
-//       return [];
-//     }
-//   }
-//
-//   Future<List<OfferModel>> getOffersByBank(context,bankId) {
-//     ApiService().getBaseUrlAndToken();
-//
-//     return ApiService()
-//         .dio
-//         .get('${EndPointsStrings.getOfferByBankIdEndPoint}$bankId')
-//         .then((value) {
-//       var result = ApiService.decodeResp(value);
-//       if (result != null) {
-//         var val = result
-//             .map<OfferModel>((e) => OfferModel.fromJson(e))
-//             .toList();
-//
-//         return val;
-//       } else {
-//         return [];
-//       }
-//     });
-//   }
-//
-// // Future<List<TaxData>> getAllTaxes(context) {
-// //   ApiService().getBaseUrlAndToken();
-// //
-// //   return ApiService()
-// //       .dio
-// //       .get(EndPointsStrings.getTaxesEndPoint)
-// //       .then((value) {
-// //     var result = ApiService.decodeResp(value);
-// //
-// //     if (result['data'] != null) {
-// //       var val =
-// //           result['data'].map<TaxData>((e) => TaxData.fromJson(e)).toList();
-// //
-// //       return val;
-// //     } else {
-// //       return [];
-// //     }
-// //   });
-// // }
-// }
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:ye_hraj/model/cities_model.dart';
+import 'package:ye_hraj/model/region_model.dart';
+
+import '../../../configurations/data/api_services.dart';
+import '../../../configurations/data/end_points_manager.dart';
+
+class CommonViewRepository {
+  CommonViewRepository._internal();
+
+  static final CommonViewRepository _singleton =
+      CommonViewRepository._internal();
+
+  factory CommonViewRepository() {
+    return _singleton;
+  }
+
+  Future<List<CitiesModel>> fetchCities() async {
+    await ApiService().getToken();
+
+    try {
+      // 1. الاتصال بالـ API (تأكد من تعديل الرابط ليتناسب مع مشروعك)
+      final response = await ApiService().dio.get(EndPointsStrings.getCitiesEndPoint); // أو حسب مسار الـ API عندك
+
+      // 2. معالجة البيانات (لأنها ترجع مصفوفة مباشرة List)
+      if (response.statusCode == 200 && response.data != null) {
+
+        // التحقق مما إذا كانت البيانات مصفوفة مباشرة (مثل الـ JSON الذي أرسلته)
+        if (response.data is List) {
+          List<CitiesModel> categories = (response.data as List)
+              .map((e) => CitiesModel.fromJson(e))
+              .toList();
+          return categories;
+        }
+        // أو إذا كانت مغلفة بـ data (احتياطياً)
+        else if (response.data is Map && response.data['data'] != null) {
+          List<CitiesModel> categories = (response.data['data'] as List)
+              .map((e) => CitiesModel.fromJson(e))
+              .toList();
+          return categories;
+        }
+      }
+
+      return []; // إرجاع قائمة فارغة إذا لم تكن هناك بيانات
+
+    } on DioException catch (e) {
+      // ⚠️ معالجة أخطاء الشبكة
+      debugPrint("خطأ في الاتصال بالشبكة (Categories): ${e.message}");
+      return [];
+
+    } catch (e) {
+      // ⚠️ معالجة أخطاء التحويل (Parsing)
+      debugPrint("خطأ في تحويل بيانات الأقسام: $e");
+      return [];
+    }
+  }
+
+  Future<List<RegionModel>> fetchRegion(int cityId) async {
+    await ApiService().getToken();
+
+    try {
+      // 1. الاتصال بالـ API (تأكد من تعديل الرابط ليتناسب مع مشروعك)
+      final response = await ApiService().dio.get('${EndPointsStrings.getRegionsByCityEndPoint}/$cityId'); // أو حسب مسار الـ API عندك
+
+      // 2. معالجة البيانات (لأنها ترجع مصفوفة مباشرة List)
+      if (response.statusCode == 200 && response.data != null) {
+
+        // التحقق مما إذا كانت البيانات مصفوفة مباشرة (مثل الـ JSON الذي أرسلته)
+        if (response.data is List) {
+          List<RegionModel> categories = (response.data as List)
+              .map((e) => RegionModel.fromJson(e))
+              .toList();
+          return categories;
+        }
+        // أو إذا كانت مغلفة بـ data (احتياطياً)
+        else if (response.data is Map && response.data['data'] != null) {
+          List<RegionModel> categories = (response.data['data'] as List)
+              .map((e) => RegionModel.fromJson(e))
+              .toList();
+          return categories;
+        }
+      }
+
+      return []; // إرجاع قائمة فارغة إذا لم تكن هناك بيانات
+
+    } on DioException catch (e) {
+      // ⚠️ معالجة أخطاء الشبكة
+      debugPrint("خطأ في الاتصال بالشبكة (Categories): ${e.message}");
+      return [];
+
+    } catch (e) {
+      // ⚠️ معالجة أخطاء التحويل (Parsing)
+      debugPrint("خطأ في تحويل بيانات الأقسام: $e");
+      return [];
+    }
+  }
+
+  // Future<List<CitiesModel>> getCities() async {
+  //   await ApiService().getToken();
+  //
+  //   try {
+  //     // 1. الاتصال بالسيرفر
+  //     final response = await ApiService().dio.get(EndPointsStrings.getCitiesEndPoint);
+  //
+  //     // 2. فك تشفير البيانات بناءً على طريقتكم
+  //     var result = ApiService.decodeResp(response);
+  //
+  //     // 3. التحقق من وجود البيانات وتحويلها
+  //     if (result['data'] != null) {
+  //       List<CitiesModel> cities = (result['data'] as List)
+  //           .map((e) => CitiesModel.fromJson(e))
+  //           .toList();
+  //       return cities;
+  //     } else {
+  //       // في حال كان الرد ناجحاً لكن المصفوفة فارغة أو لا يوجد مفتاح 'data'
+  //       return [];
+  //     }
+  //
+  //   } on DioException catch (e) {
+  //     // ⚠️ معالجة أخطاء الشبكة والسيرفر (Dio Errors)
+  //     if (e.type == DioExceptionType.connectionTimeout ||
+  //         e.type == DioExceptionType.receiveTimeout) {
+  //       print("خطأ: انتهى وقت الاتصال بالسيرفر.");
+  //     } else if (e.type == DioExceptionType.badResponse) {
+  //       print("خطأ من السيرفر: الكود ${e.response?.statusCode}");
+  //     } else if (e.type == DioExceptionType.connectionError) {
+  //       print("خطأ: لا يوجد اتصال بالإنترنت.");
+  //     } else {
+  //       print("خطأ غير معروف في الشبكة: ${e.message}");
+  //     }
+  //
+  //     // يمكنك إرجاع مصفوفة فارغة، أو رمي خطأ ليلتقطه الـ ViewModel ويظهره للمستخدم
+  //     return []; // أو throw Exception('فشل الاتصال بالخادم');
+  //
+  //   } catch (e) {
+  //     // ⚠️ معالجة أخطاء الكود (مثل فشل تحويل JSON إلى CityModel)
+  //     print("خطأ في معالجة البيانات (Parsing Error): $e");
+  //     return [];
+  //   }
+  // }
+
+  // Future<List<RegionModel>> fetchRegionsByCity(int cityId) async {
+  //   await ApiService().getToken();
+  //
+  //   try {
+  //     // 1. الاتصال بالسيرفر
+  //     final response = await ApiService().dio.get('${EndPointsStrings.getRegionsByCityEndPoint}/$cityId');
+  //
+  //     // 2. فك تشفير البيانات بناءً على طريقتكم
+  //     var result = ApiService.decodeResp(response);
+  //
+  //     // 3. التحقق من وجود البيانات وتحويلها
+  //     if (result['data'] != null) {
+  //       List<RegionModel> regions = (result['data'] as List)
+  //           .map((e) => RegionModel.fromJson(e))
+  //           .toList();
+  //       return regions;
+  //     } else {
+  //       // في حال كان الرد ناجحاً لكن المصفوفة فارغة أو لا يوجد مفتاح 'data'
+  //       return [];
+  //     }
+  //
+  //   } on DioException catch (e) {
+  //     // ⚠️ معالجة أخطاء الشبكة والسيرفر (Dio Errors)
+  //     if (e.type == DioExceptionType.connectionTimeout ||
+  //         e.type == DioExceptionType.receiveTimeout) {
+  //       print("خطأ: انتهى وقت الاتصال بالسيرفر.");
+  //     } else if (e.type == DioExceptionType.badResponse) {
+  //       print("خطأ من السيرفر: الكود ${e.response?.statusCode}");
+  //     } else if (e.type == DioExceptionType.connectionError) {
+  //       print("خطأ: لا يوجد اتصال بالإنترنت.");
+  //     } else {
+  //       print("خطأ غير معروف في الشبكة: ${e.message}");
+  //     }
+  //
+  //     // يمكنك إرجاع مصفوفة فارغة، أو رمي خطأ ليلتقطه الـ ViewModel ويظهره للمستخدم
+  //     return []; // أو throw Exception('فشل الاتصال بالخادم');
+  //
+  //   } catch (e) {
+  //     // ⚠️ معالجة أخطاء الكود (مثل فشل تحويل JSON إلى CityModel)
+  //     print("خطأ في معالجة البيانات (Parsing Error): $e");
+  //     return [];
+  //   }
+  // }
+}

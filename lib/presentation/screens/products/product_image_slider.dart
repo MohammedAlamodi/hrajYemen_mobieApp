@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:ye_hraj/configurations/data/end_points_manager.dart';
 
 import '../../custom_widgets/custom_text.dart';
 
@@ -21,45 +23,46 @@ class ProductImageSlider extends StatelessWidget {
       child: Stack(
         children: [
           //رابط الصورة "لا يوجد منتج"
-
           PageView.builder(
             onPageChanged: onPageChanged,
             itemCount: images.length,
             itemBuilder: (context, index) {
-              return Image.network(
-                images[index], // 1. محاولة تحميل الصورة الأصلية
-                fit: BoxFit.cover,
-                width: double.infinity,
-                // مؤشر التحميل (اختياري)
-                loadingBuilder: (context, child, loadingProgress) {
-                  if (loadingProgress == null) return child;
-                  return Center(
-                    child: CircularProgressIndicator(
-                      value: loadingProgress.expectedTotalBytes != null
-                          ? loadingProgress.cumulativeBytesLoaded /
-                          loadingProgress.expectedTotalBytes!
-                          : null,
-                    ),
-                  );
-                },
+              String imageUrl = images[index];
+              return imageUrl.toLowerCase().endsWith('.svg')
+                  ? SvgPicture.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      placeholderBuilder: (BuildContext context) =>
+                          const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                    )
+                  : Image.network(
+                      imageUrl, // 1. محاولة تحميل الصورة الأصلية
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      // مؤشر التحميل (اختياري)
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Center(
+                          child: CircularProgressIndicator(
+                            value: loadingProgress.expectedTotalBytes != null
+                                ? loadingProgress.cumulativeBytesLoaded /
+                                      loadingProgress.expectedTotalBytes!
+                                : null,
+                          ),
+                        );
+                      },
 
-                // ✅ 2. هنا المعالجة: إذا فشل التحميل، اعرض الصورة البديلة
-                errorBuilder: (context, error, stackTrace) {
-                  return Image.network(
-                   'https://2townsciderhouse.com/wp-content/themes/mx-theme/assets/img/no_product.png', // رابط الصورة "لا يوجد منتج"
-                    fit: BoxFit.contain,
-                    width: double.infinity,
-                  );
-                },
-
-                // errorBuilder: (context, error, stackTrace) {
-                //   return Image.asset(
-                //     'assets/images/no_image_placeholder.png', // صورة محلية
-                //     fit: BoxFit.cover,
-                //     width: double.infinity,
-                //   );
-                // },
-              );
+                      // ✅ 2. هنا المعالجة: إذا فشل التحميل، اعرض الصورة البديلة
+                      errorBuilder: (context, error, stackTrace) {
+                        return Image.network(
+                          EndPointsStrings.emptyImageUrl,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                        );
+                      },
+                    );
             },
           ),
 
@@ -69,7 +72,10 @@ class ProductImageSlider extends StatelessWidget {
             right: 0,
             child: Center(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.5),
                   borderRadius: BorderRadius.circular(20),

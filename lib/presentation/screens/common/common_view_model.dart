@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:ye_hraj/model/cities_model.dart';
 import '../../../configurations/localization/i18n.dart';
 import '../../../configurations/user_preferences.dart';
 import '../../../configurations/resources/strings_manager.dart';
 import 'package:dio/dio.dart';
 
+import '../../../model/category_model.dart';
+import '../../../model/region_model.dart';
 import '../../../model/user_model.dart';
 import '../../custom_widgets/dialog/overlay_helper.dart';
+import '../home/home_repo.dart';
 import 'common_rep.dart';
 
 class CommonViewModel extends ChangeNotifier {
-  // final CommonViewRepository _repo = CommonViewRepository();
+  final CommonViewRepository _repo = CommonViewRepository();
 
   String locale = 'ar';
 
@@ -32,51 +36,9 @@ class CommonViewModel extends ChangeNotifier {
   bool get isFilterCatLoading => _isFilterCatLoading;
 
   bool _isLoggedIn = false; // غيّرها لـ false لتجربة وضع الزائر
-  UserModel? _user;
 
   bool get isLoggedIn => _isLoggedIn;
-  UserModel? get user => _user;
 
-  ProfileViewModel() {
-    _loadUserData();
-  }
-
-  void _loadUserData() {
-    // محاكاة جلب البيانات
-    if (_isLoggedIn) {
-      _user = UserModel(
-        id: '1',
-        fullName: 'محمد عبدالله العمودي',
-        userName:  'mo',
-        location: 'المكلا',
-        profileImageUrl: 'https://ymimg1.b8cdn.com/resized/car_model/11937/pictures/15965510/webp_listing_main_zeekr-001-exterior-01.webp', // رابط صورة افتراضي
-        phoneNumber: '+967 738883773', // إعلاناتي الحالية
-        bio: 'مرحبا! أنا مستخدم نشط في التطبيق.',
-        activeAdsCount: 12, // إعلاناتي الحالية
-        expiredAdsCount: 5,  // إعلاناتي المنتهية
-
-      );
-    }
-    notifyListeners();
-  }
-
-  // تسجيل الدخول (محاكاة)
-  Future<void> login() async{
-    _isLoggedIn = true;
-    _loadUserData();
-    notifyListeners();
-  }
-
-  // تسجيل الخروج
-  void logout(BuildContext context) {
-    // هنا مسح التوكن والبيانات المحلية
-    _isLoggedIn = false;
-    _user = null;
-    notifyListeners();
-    // Navigator.pushReplacementNamed(context, '/login');
-  }
-
-  // حذف الحساب (مهم لقوقل بلاي)
   void deleteAccount(BuildContext context) {
     showDialog(
       context: context,
@@ -88,7 +50,8 @@ class CommonViewModel extends ChangeNotifier {
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              logout(context); // تنفيذ الحذف ثم الخروج
+              UserPreferences().logout(context);
+              // logout(context); // تنفيذ الحذف ثم الخروج
             },
             child: const Text('حذف نهائي', style: TextStyle(color: Colors.red)),
           ),
@@ -97,23 +60,37 @@ class CommonViewModel extends ChangeNotifier {
     );
   }
 
-  // List<UserRolesModel> userRoles = [];
-  //
-  // List<CustomerModel> customers = [];
-  //
-  // List<NotificationModel> notifications= [];
   int newNotifications = 0;
-  //
-  // List<OfferCategoryModel> allOffersCategorise = [];
-  //
-  // List<OfferModel> allUserOffers = [];
-  // List<OfferModel> filteredUserOffers = [];
 
   int indexOfCatMnu = 0;
 
   int currentIndex = 0;
 
+  late String currentUserId;
+  late String currentUserName;
+
   bool changeCurrentIndex = false;
+
+
+  // القوائم والبيانات
+  List<CategoryModel> _categoriesList = []; // القائمة الخام من الموديل
+  List<SubCategoryModel> _subCategoriesList = []; // القائمة الفرعية الحالية
+
+  List<CategoryModel> get categoriesList => _categoriesList;
+
+  List<SubCategoryModel> get subCategories => _subCategoriesList;
+
+  bool _isLoadingCategories = false;
+  bool _isLoadingSubCategories = false;
+  bool _isLoadingRegion = false;
+
+  bool get isLoadingCategories => _isLoadingCategories;
+
+  bool get isLoadingRegion => _isLoadingRegion;
+
+  bool get isLoadingSubCategories => _isLoadingSubCategories;
+
+  final HomeRepository _homeRepo = HomeRepository();
 
   changeHomeIndex(int val) {
     currentIndex = val;
@@ -121,17 +98,62 @@ class CommonViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  // changeLanguage(String val) {
-  //   indexOfSelectedLang = val;
-  //   notifyListeners();
-  // }
+  List<CitiesModel> cities = [];
+  List<RegionModel> regions = [];
 
-  // resetData(){
-  //   homePageErrorMessage = null;
-  //   filteredUserOffers = allUserOffers;
-  //   indexOfCatMnu = 0;
-  //   notifyListeners();
-  // }
+   Future<void> getAllCities(BuildContext context) async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      cities = await _repo.fetchCities();
+    } on DioException catch (e) {
+      if (e.response != null) {
+        String errorMessage =
+            e.response?.data['message'] ?? 'An error occurred';
+        debugPrint('error message1 $errorMessage');
+        homePageErrorMessage = 'Error : $errorMessage ';
+      } else {
+        String errorMessage = 'Network error: ${e.message}';
+        debugPrint('error in login $errorMessage');
+        homePageErrorMessage = 'Error in Server';
+      }
+    } catch (e) {
+      debugPrint('***********error in login ${e.toString()}');
+      homePageErrorMessage = S.of(context)!.anErrorOccurred;
+    }
+
+    _isLoading = false;
+    notifyListeners();
+  }
+
+  Future<void> updateRegionsOfSelectedCity(BuildContext context, int cityId) async {
+    _isLoadingRegion = true;
+    notifyListeners();
+
+    try {
+      regions = (await _repo.fetchRegion(cityId));
+    } on DioException catch (e) {
+      if (e.response != null) {
+        String errorMessage =
+            e.response?.data['message'] ?? 'An error occurred';
+        debugPrint('error message1 $errorMessage');
+        homePageErrorMessage = 'Error : $errorMessage ';
+        // await showErrorDialog(context: context, message: S.of(context)!.errorHap
+        //     , description: errorMessage);
+      } else {
+        String errorMessage = 'Network error: ${e.message}';
+        debugPrint('error in login $errorMessage');
+        homePageErrorMessage = 'Error in Server';
+      }
+    } catch (e) {
+      debugPrint('***********error in login ${e.toString()}');
+      homePageErrorMessage = S.of(context)!.anErrorOccurred;
+    }
+
+    _isLoadingRegion = false;
+    notifyListeners();
+  }
 
   changeLanguage(String val) {
     locale = val;
@@ -142,7 +164,7 @@ class CommonViewModel extends ChangeNotifier {
   Future getLanguage() async {
     UserPreferences userPreferences = UserPreferences();
 
-    locale = userPreferences.getString(
+    locale = await userPreferences.getString(
         key: AppStrings.languageKey, defaultValue: 'ar');
 
     notifyListeners();
@@ -151,6 +173,52 @@ class CommonViewModel extends ChangeNotifier {
   void setLoginIn(bool val) {
     _isLoggedIn = val;
     notifyListeners();
+  }
+
+  void setCurrentUserId(String val) {
+    currentUserId = val;
+    notifyListeners();
+  }
+  void setCurrentUserName(String val) {
+    currentUserName = val;
+    notifyListeners();
+  }
+
+
+  Future<void> fetchCategoriesFromRepo() async {
+    _isLoadingCategories = true;
+    notifyListeners();
+
+    try {
+      // نستخدم الدالة الموجودة مسبقاً في الريبو
+      _categoriesList = await _homeRepo.fetchCategories();
+    } catch (e) {
+      print("Error fetching categories: $e");
+    } finally {
+      _isLoadingCategories = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> updateSubCategories(int? mainCategoryId) async {
+    _isLoadingSubCategories = true;
+    notifyListeners();
+    _subCategoriesList = [];
+
+    if (mainCategoryId == null) {
+      _subCategoriesList = [];
+    } else {
+      _subCategoriesList = await _homeRepo.fetchSubCategories(mainCategoryId);
+    }
+
+    _isLoadingSubCategories = false;
+    notifyListeners();
+  }
+
+
+  Future<void> initData({required BuildContext context}) async {
+    await fetchCategoriesFromRepo();
+    await getAllCities(context);
   }
 
   // Future<void> getUseRoles(BuildContext context) async {

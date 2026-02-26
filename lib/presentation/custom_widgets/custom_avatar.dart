@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:ye_hraj/configurations/data/end_points_manager.dart';
 
 class CustomProductImageAvatar extends StatelessWidget {
   final String? image;
@@ -39,10 +40,7 @@ class CustomProductImageAvatar extends StatelessWidget {
                 ? fromNetwork
                       ? Image.network(image!, fit: BoxFit.cover)
                       : Image.memory(base64Decode(image!), fit: BoxFit.cover)
-                : Image.asset(
-                    'assets/images/no_productImage.png',
-                    fit: BoxFit.cover,
-                  ),
+                : Image.network(EndPointsStrings.emptyImageUrl, fit: BoxFit.cover),
           ),
         ),
       ),

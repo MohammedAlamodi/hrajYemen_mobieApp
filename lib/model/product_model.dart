@@ -1,163 +1,162 @@
+import 'package:ye_hraj/configurations/data/end_points_manager.dart';
 import 'package:ye_hraj/model/product_image_model.dart';
+import 'package:ye_hraj/model/user_model.dart';
 
-import 'category_model.dart';
 import 'product_condition.dart';
-import 'user_model.dart';
 
 class ProductModel {
   final int id;
   final String title;
-  final String status;
-  final String description;
-  final double? price; // C# Decimal -> Dart double
-  final ProductCondition condition;
+  final String? description;
+  final double? price;
+  final String? condition;
 
-  // إعدادات التواصل
-  final bool allowChat;
-  final bool allowCall;
-  final bool allowWhatsApp;
-  final bool showPhoneNumber;
+  final String? categoryName;
+  final String? subCategoryName;
+  final String? cityName;
+  final String? regionName;
+  final String? userName;
+  // final String userId;
+  final UserModel? user;
+  final String? userProfileImageUrl;
+  // final UserModel? user;
 
+  final bool isActive;
+  final bool isFavorite;
+  final String? mainImageUrl;
   final int viewsCount;
   final DateTime createdAt;
 
-  // العلاقات (IDs & Objects)
-  final String userId;
-  final UserModel? user;
-
-  final int categoryId;
-  final CategoryModel? category;
-
-  final int subCategoryId;
-  final SubCategoryModel? subCategory;
-
-  final int cityId;
-  final CityModel? city;
-
-  final int regionId;
-  final RegionModel? region;
-
-  // القوائم
   final List<ProductImageModel> images;
-  final List<ProductCommentModel> comments;
 
-  // ✅ الحقل الجديد: الخصائص
-  // final Map<String, String> attributes;
+  final List<ProductCommentModel> comments;
 
   ProductModel({
     required this.id,
     required this.title,
-    required this.status,
-    required this.description,
+    this.description,
     this.price,
-    required this.condition,
-    this.allowChat = true,
-    this.allowCall = true,
-    this.allowWhatsApp = false,
-    this.showPhoneNumber = true,
-    this.viewsCount = 0,
-    required this.createdAt,
-    required this.userId,
+    this.condition,
+
+    this.categoryName,
+    this.subCategoryName,
+    this.cityName,
+    this.regionName,
+    this.userName,
     this.user,
-    required this.categoryId,
-    this.category,
-    required this.subCategoryId,
-    this.subCategory,
-    required this.cityId,
-    this.city,
-    required this.regionId,
-    this.region,
+    this.userProfileImageUrl,
+    // required this.userId,
+
+    required this.isActive,
+    required this.isFavorite,
+    this.mainImageUrl,
+    required this.viewsCount,
+    required this.createdAt,
+
     this.images = const [],
     this.comments = const [],
-    // this.attributes = const {}, // قيمة افتراضية فارغة
   });
 
   factory ProductModel.fromJson(Map<String, dynamic> json) {
+    // 1. معالجة مصفوفة الصور
+    List<ProductImageModel> parsedImages = [];
+    if (json['images'] != null && (json['images'] as List).isNotEmpty) {
+      parsedImages = (json['images'] as List)
+          .map((e) => ProductImageModel.fromJson(e))
+          .toList();
+    }
+    // إذا كانت مصفوفة الصور فارغة لكن يوجد mainImageUrl (كحل احتياطي)
+    else if (json['mainImageUrl'] != null) {
+      String path = json['mainImageUrl'];
+      if (path.startsWith('/')) {
+        path = '${EndPointsStrings.baseUrl}$path';
+      }
+      parsedImages.add(ProductImageModel(id: 0, imageUrl: path, isMain: true));
+    }
+
+    // 2. إصلاح رابط الصورة الرئيسية
+    String? mainImage = json['mainImageUrl'];
+    if (mainImage != null && mainImage.startsWith('/')) {
+      mainImage = '${EndPointsStrings.baseUrl}$mainImage';
+    }
+
     return ProductModel(
       id: json['id'] ?? 0,
+      // userId: json['userId'] ?? '',
       title: json['title'] ?? '',
-      status: json['status'] ?? '',
-      description: json['description'] ?? '',
-      // تحويل آمن للسعر (يقبل int أو double من الـ API)
+      description: json['description'],
       price: (json['price'] as num?)?.toDouble(),
-      // تحويل الرقم إلى Enum
-      condition: ProductConditionHelper.fromInt(json['condition'] ?? 2),
+      condition: json['condition'],
+      userProfileImageUrl: json['userImageUrl'],
+      categoryName: json['categoryName'],
+      subCategoryName: json['subCategoryName'],
+      cityName: json['cityName'],
+      regionName: json['regionName'],
+      userName: json['userName'],
+      user: json['user'] != null ? UserModel.fromJson(json['user']) : null,
 
-      allowChat: json['allowChat'] ?? true,
-      allowCall: json['allowCall'] ?? true,
-      allowWhatsApp: json['allowWhatsApp'] ?? false,
-      showPhoneNumber: json['showPhoneNumber'] ?? true,
+      isActive: json['isActive'] ?? true,
+      isFavorite: json['isFavorite'] ?? false,
+      mainImageUrl: mainImage,
       viewsCount: json['viewsCount'] ?? 0,
 
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
           : DateTime.now(),
-
-      userId: json['userId'] ?? '',
-      user: json['user'] != null ? UserModel.fromJson(json['user']) : null,
-
-      categoryId: json['categoryId'] ?? 0,
-      category: json['category'] != null ? CategoryModel.fromJson(json['category']) : null,
-
-      subCategoryId: json['subCategoryId'] ?? 0,
-      subCategory: json['subCategory'] != null ? SubCategoryModel.fromJson(json['subCategory']) : null,
-
-      cityId: json['cityId'] ?? 0,
-      city: json['city'] != null ? CityModel.fromJson(json['city']) : null,
-
-      regionId: json['regionId'] ?? 0,
-      region: json['region'] != null ? RegionModel.fromJson(json['region']) : null,
-
-      images: (json['images'] as List<dynamic>?)
-          ?.map((e) => ProductImageModel.fromJson(e))
-          .toList() ?? [],
-
-      comments: (json['comments'] as List<dynamic>?)
-          ?.map((e) => ProductCommentModel.fromJson(e))
-          .toList() ?? [],
+      images: parsedImages,
+      comments:
+          (json['comments'] as List<dynamic>?)
+              ?.map((e) => ProductCommentModel.fromJson(e))
+              .toList() ??
+          [],
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'status': status,
-    'description': description,
-    'price': price,
-    'condition': ProductConditionHelper.toInt(condition),
-    'allowChat': allowChat,
-    'allowCall': allowCall,
-    'allowWhatsApp': allowWhatsApp,
-    'showPhoneNumber': showPhoneNumber,
-    'viewsCount': viewsCount,
-    'createdAt': createdAt.toIso8601String(),
-    'userId': userId,
-    'user': user?.toJson(),
-    'categoryId': categoryId,
-    'category': category?.toJson(),
-    'subCategoryId': subCategoryId,
-    'subCategory': subCategory?.toJson(),
-    'cityId': cityId,
-    'city': city?.toJson(),
-    'regionId': regionId,
-    'region': region?.toJson(),
-    'images': images.map((e) => e.toJson()).toList(),
-    'comments': comments.map((e) => e.toJson()).toList(),
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'price': price,
+      // تحويل حالة المنتج (Enum) إلى رقم (1 أو 2) كما يتوقع السيرفر
+      'condition': condition,
 
-  // ✅✅✅ هنا الإضافة الذكية: Getter ينشئ الخصائص ديناميكياً ✅✅✅
+      'categoryName': categoryName,
+      'subCategoryName': subCategoryName,
+      'cityName': cityName,
+      'regionName': regionName,
+      'userName': userName,
+
+      'isActive': isActive,
+      'isFavorite': isFavorite,
+
+      // إزالة الدومين عند الإرسال للسيرفر إذا كان السيرفر يحفظ المسار فقط (مثل /images/...)
+      'mainImageUrl': mainImageUrl?.replaceAll('https://hrajyemen-001-site1.site4future.com', ''),
+
+      'viewsCount': viewsCount,
+      'createdAt': createdAt.toIso8601String(), // تحويل التاريخ لنص قياسي
+
+      // تحويل مصفوفة الصور والتعليقات
+      'images': images.map((e) => e.toJson()).toList(),
+      // 'comments': comments.map((e) => e.toJson()).toList(), // إذا كان لديك تعليقات
+    };
+  }
+
+  // توليد الخصائص للواجهة بناءً على البيانات القادمة
   Map<String, String> get attributes {
     return {
       'رقم الإعلان': '$id',
-      if (subCategory != null) 'القسم': subCategory!.name,
-      'الحالة': condition == ProductCondition.newItem ? 'جديد' : 'مستعمل',
-      if (city != null && region != null) 'الموقع': '${city!.name} - ${region!.name}',
-      if (price != null) 'السعر': '$price ر.ي',
+      if (categoryName != null) 'الفئة': categoryName!,
+      if (subCategoryName != null) 'القسم': subCategoryName!,
+      if (condition != null)
+        'الحالة': condition == "New" ? 'جديد' : 'مستعمل',
+      if (cityName != null && regionName == null) 'الموقع': cityName!,
+      if (price != null && price! > 0)
+        'السعر': '${price!.toStringAsFixed(0)} ر.ي',
       'تاريخ النشر': formatTimeAgo(createdAt),
     };
   }
 }
-
 
 // دالة مساعدة لتنسيق التاريخ (يمكنك وضعها في ملف util خارجي)
 String formatTimeAgo(DateTime date) {

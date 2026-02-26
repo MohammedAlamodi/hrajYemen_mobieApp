@@ -3,7 +3,12 @@ import 'dart:async';
 import 'dart:io'; // لاستخدام File
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
+import 'package:ye_hraj/model/cities_model.dart';
+import 'package:ye_hraj/model/region_model.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_text.dart';
+import 'package:ye_hraj/presentation/screens/common/common_view_model.dart';
+import 'package:ye_hraj/presentation/screens/home/home_view_model.dart';
 
 import '../../../../model/category_model.dart';
 import '../../home/home_repo.dart';
@@ -16,10 +21,6 @@ class AddAdViewModel extends ChangeNotifier {
 
   bool get isLoadingPostAd => _isLoadingPostAd;
 
-  bool _isLoadingCategories = false;
-
-  bool get isLoadingCategories => _isLoadingCategories;
-
   bool _isAgreeToPostAd = false;
 
   bool get isAgreeToPostAd => _isAgreeToPostAd;
@@ -30,120 +31,119 @@ class AddAdViewModel extends ChangeNotifier {
 
   int get currentStep => _currentStep;
 
+  late CommonViewModel commonViewModel;
+
   // --- الخطوة 1: التفاصيل (موجودة سابقاً) ---
   final TextEditingController titleController = TextEditingController();
   final TextEditingController priceController = TextEditingController();
   final TextEditingController descriptionController = TextEditingController();
-  String? _selectedMainCategory;
-  String? _selectedSubCategory;
-  String _condition = 'new';
-  String? _selectedCity;
+  CategoryModel? _selectedMainCategory;
+  SubCategoryModel? _selectedSubCategory;
+  RegionModel? _selectedRegion;
+  int _condition = 1;
+  CitiesModel? _selectedCity;
 
   // Getters للخطوة 1
-  String? get selectedMainCategory => _selectedMainCategory;
+  CategoryModel? get selectedMainCategory => _selectedMainCategory;
 
-  String? get selectedSubCategory => _selectedSubCategory;
+  SubCategoryModel? get selectedSubCategory => _selectedSubCategory;
 
-  String get condition => _condition;
+  RegionModel? get selectedRegion => _selectedRegion;
 
-  String? get selectedCity => _selectedCity;
+  int get condition => _condition;
+
+  CitiesModel? get selectedCity => _selectedCity;
 
   // --- الخطوة 2: الصور ---
   List<File> _images = []; // سنستخدم File للصور الحقيقية
   List<File> get images => _images;
 
-  // القوائم والبيانات
-  List<CategoryModel> _categoriesList = []; // القائمة الخام من الموديل
-  List<String> _subCategoriesList = []; // القائمة الفرعية الحالية
+  // --- الخطوة 3: التواصل ---
+  bool _hasChat = true;
+  bool _hasCall = true;
+  bool _hasWhatsApp = false;
+  bool _showPhoneNumber = true;
 
-  List<String> get mainCategories =>
-      _categoriesList.map((e) => e.name).toList();
+  bool get hasChat => _hasChat;
 
-  List<String> get subCategories => _subCategoriesList;
+  bool get hasCall => _hasCall;
 
-  // قائمة المدن (ممكن نجيبها من الريبو كمان مستقبلاً)
-  final List<String> cities = [
-    'المكلا',
-    'عدن',
-    'صنعاء',
-    'تعز',
-    'جدة',
-    'الرياض',
-  ];
+  bool get hasWhatsApp => _hasWhatsApp;
 
-  // ✅ Constructor: نجلب البيانات أول ما يشتغل الكلاس
-  AddAdViewModel() {
-    _fetchCategoriesFromRepo();
-  }
-
-  // ✅ جلب الفئات من HomeRepository
-  Future<void> _fetchCategoriesFromRepo() async {
-    _isLoadingCategories = true;
-    notifyListeners();
-
-    try {
-      // نستخدم الدالة الموجودة مسبقاً في الريبو
-      _categoriesList = await _repo.fetchCategories();
-    } catch (e) {
-      print("Error fetching categories: $e");
-    } finally {
-      _isLoadingCategories = false;
-      notifyListeners();
-    }
-  }
+  bool get showPhoneNumber => _showPhoneNumber;
 
   // ✅ تحديث الفئة الرئيسية وجلب الفرعية بناءً عليها
-  void setMainCategory(String? value) {
-    if (value == _selectedMainCategory) return;
+  void setMainCategory(BuildContext context, int? categoryId) {
+    commonViewModel = Provider.of<CommonViewModel>(context, listen: false);
+    if (categoryId == null) return;
 
-    _selectedMainCategory = value;
+    if (categoryId.toString() == _selectedMainCategory?.id.toString()) return;
+
+    for (var cat in commonViewModel.categoriesList) {
+      if (cat.id.toString() == categoryId.toString()) {
+        _selectedMainCategory = cat;
+        break;
+      }
+    }
     _selectedSubCategory = null; // تصفير الفرعي
 
     // محاكاة جلب فئات فرعية مختلفة حسب الاختيار
-    _updateSubCategories(value);
+    commonViewModel.updateSubCategories(categoryId);
 
     notifyListeners();
   }
 
-  void _updateSubCategories(String? mainCategory) {
-    // هنا منطق محاكاة (في الواقع ستطلب API يرجع لك الـ SubCategories)
-    if (mainCategory == 'سيارات') {
-      _subCategoriesList = [
-        'تويوتا',
-        'هونداي',
-        'كيا',
-        'نيسان',
-        'فورد',
-        'مرسيدس',
-      ];
-    } else if (mainCategory == 'عقارات') {
-      _subCategoriesList = [
-        'شقق للإيجار',
-        'فلل للبيع',
-        'أراضي',
-        'عمارة تجارية',
-      ];
-    } else if (mainCategory == 'أجهزة') {
-      _subCategoriesList = ['جوالات', 'لابتوبات', 'تلفزيونات', 'سماعات'];
-    } else if (mainCategory == 'أزياء') {
-      _subCategoriesList = ['ملابس رجالية', 'ملابس نسائية', 'أحذية', 'ساعات'];
-    } else {
-      _subCategoriesList = ['أخرى'];
+  void setSubCategory(BuildContext context, int? id) {
+    commonViewModel = Provider.of<CommonViewModel>(context, listen: false);
+    if (id == null) return;
+
+    if (id.toString() == _selectedSubCategory?.id.toString()) return;
+    for (var sub in commonViewModel.subCategories) {
+      if (sub.id.toString() == id.toString()) {
+        _selectedSubCategory = sub;
+        break;
+      }
     }
-  }
-
-  void setSubCategory(String? value) {
-    _selectedSubCategory = value;
     notifyListeners();
   }
 
-  void setCondition(String value) {
+  void setCondition(int value) {
     _condition = value;
     notifyListeners();
   }
 
-  void setCity(String? value) {
-    _selectedCity = value;
+  void setCity(BuildContext context, int? cityId) {
+    commonViewModel = Provider.of<CommonViewModel>(context, listen: false);
+    if (cityId == null) return;
+
+    if (cityId.toString() == _selectedCity?.id.toString()) return;
+
+    for (var cat in commonViewModel.cities) {
+      if (cat.id.toString() == cityId.toString()) {
+        _selectedCity = cat;
+        break;
+      }
+    }
+    _selectedRegion = null; // تصفير الفرعي
+
+    // محاكاة جلب فئات فرعية مختلفة حسب الاختيار
+    commonViewModel.updateRegionsOfSelectedCity(context, cityId);
+
+    notifyListeners();
+  }
+
+  void setRegion(BuildContext context, int? id) {
+    commonViewModel = Provider.of<CommonViewModel>(context, listen: false);
+    if (id == null) return;
+
+    if (id.toString() == _selectedRegion?.id.toString()) return;
+
+    for (var reg in commonViewModel.regions) {
+      if (reg.id.toString() == id.toString()) {
+        _selectedRegion = reg;
+        break;
+      }
+    }
     notifyListeners();
   }
 
@@ -163,20 +163,6 @@ class AddAdViewModel extends ChangeNotifier {
     _images.removeAt(index);
     notifyListeners();
   }
-
-  // --- الخطوة 3: التواصل ---
-  bool _hasChat = true;
-  bool _hasCall = true;
-  bool _hasWhatsApp = false;
-  bool _showPhoneNumber = true;
-
-  bool get hasChat => _hasChat;
-
-  bool get hasCall => _hasCall;
-
-  bool get hasWhatsApp => _hasWhatsApp;
-
-  bool get showPhoneNumber => _showPhoneNumber;
 
   void toggleContactMethod(String method) {
     switch (method) {
@@ -204,11 +190,6 @@ class AddAdViewModel extends ChangeNotifier {
     } else {
       Navigator.pop(context);
     }
-  }
-
-  void updateAgreeToPostAd(bool value) {
-    _isAgreeToPostAd = value;
-    notifyListeners();
   }
 
   // دالة التالي
@@ -247,34 +228,80 @@ class AddAdViewModel extends ChangeNotifier {
     return true;
   }
 
-  // النشر النهائي
-  void _submitAd(BuildContext context) {
-    _isLoadingPostAd = true;
-    notifyListeners();
-
-    Timer(const Duration(seconds: 5), () {});
-
-    _isLoadingPostAd = false;
-    notifyListeners();
-    // هنا ترسل البيانات للسيرفر
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('تم نشر الإعلان بنجاح!')));
-
-    _isLoadingPostAd = true;
-    notifyListeners();
-    Navigator.pop(context);
-  }
-
   void setAgreeToPostAd(bool bool) {
     _isAgreeToPostAd = bool;
     notifyListeners();
   }
 
+  Future<void> _submitAd(BuildContext context) async {
+    HomeViewModel homeVM = Provider.of<HomeViewModel>(context, listen: false);
+    // 1. تفعيل حالة التحميل
+    _isLoadingPostAd = true;
+    notifyListeners();
 
-  // Setters للخطوة 1 (مختصرة)
-  // void setMainCategory(String? v) { _selectedMainCategory = v; notifyListeners(); }
-  // void setSubCategory(String? v) { _selectedSubCategory = v; notifyListeners(); }
-  // void setCondition(String v) { _condition = v; notifyListeners(); }
-  // void setCity(String? v) { _selectedCity = v; notifyListeners(); }
+    // 2. تجهيز البيانات حسب متطلبات الـ API بالضبط
+    Map<String, dynamic> productData = {
+      'Title': titleController.text.trim(),
+      'Description': descriptionController.text.trim(),
+      'Price': double.tryParse(priceController.text.trim()) ?? 0.0,
+
+      // إعدادات التواصل
+      'AllowChat': _hasChat,
+      'AllowCall': _hasCall,
+      'AllowWhatsApp': _hasWhatsApp,
+      'ShowPhoneNumber': _showPhoneNumber,
+
+      // الـ IDs (نرسل القيم فقط إذا لم تكن null)
+      if (_selectedMainCategory != null)
+        'CategoryId': _selectedMainCategory!.id,
+      if (_selectedSubCategory != null)
+        'SubCategoryId': _selectedSubCategory!.id,
+      if (_selectedCity != null) 'CityId': _selectedCity!.id,
+      if (_selectedRegion != null) 'RegionId': _selectedRegion!.id,
+    };
+
+    // معالجة حالة المنتج (Condition) لأن الـ API يقبل 1 أو 2
+    // بافتراض أن 0 تعني لم يختر شيئاً، لا نرسلها أو نعالجها حسب منطق تطبيقك
+    if (_condition == 1 || _condition == 2) {
+      productData['Condition'] = _condition;
+    }
+
+    // 3. استدعاء السيرفر لرفع البيانات والصور
+    bool isSuccess = await _repo.createProduct(
+      data: productData,
+      images: _images,
+    );
+
+    // 4. إيقاف حالة التحميل
+    _isLoadingPostAd = false;
+    notifyListeners();
+
+    // 5. التحقق من بقاء الشاشة مفتوحة (Context Mounted)
+    if (!context.mounted) return;
+
+    // 6. التعامل مع النتيجة (نجاح أو فشل)
+    if (isSuccess) {
+      homeVM.getInitialData();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم نشر الإعلان بنجاح! 🎉'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // إغلاق الشاشة والعودة للرئيسية
+      Navigator.pop(context);
+
+      // 💡 تلميح: هنا يفضل استدعاء دالة لتحديث قائمة الإعلانات في الصفحة الرئيسية
+      // Provider.of<HomeViewModel>(context, listen: false).getInitialData();
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('حدث خطأ أثناء النشر، يرجى المحاولة لاحقاً.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 }

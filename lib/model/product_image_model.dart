@@ -1,33 +1,43 @@
 import 'package:ye_hraj/model/user_model.dart';
 
+import '../configurations/data/end_points_manager.dart';
+
 class ProductImageModel {
   final int id;
   final String imageUrl;
   final bool isMain;
-  final int productId;
+  final int? productId; // قد لا يأتي من القائمة المختصرة
 
   ProductImageModel({
     required this.id,
     required this.imageUrl,
     required this.isMain,
-    required this.productId,
+    this.productId,
   });
 
   factory ProductImageModel.fromJson(Map<String, dynamic> json) {
+    String path = json['imageUrl'] ?? '';
+    if (path.startsWith('/')) {
+      path = '${EndPointsStrings.baseUrl}$path';
+    }
+
     return ProductImageModel(
       id: json['id'] ?? 0,
-      imageUrl: json['imageUrl'] ?? '',
+      imageUrl: path,
       isMain: json['isMain'] ?? false,
-      productId: json['productId'] ?? 0,
+      productId: json['productId'],
     );
   }
 
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'imageUrl': imageUrl,
-    'isMain': isMain,
-    'productId': productId,
-  };
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      // إعادة المسار لشكله الأصلي (بدون الدومين) إذا كنت سترسله للباك إند
+      'imageUrl': imageUrl.replaceAll('https://hrajyemen-001-site1.site4future.com', ''),
+      'isMain': isMain,
+      if (productId != null) 'productId': productId,
+    };
+  }
 }
 
 class ProductCommentModel {
@@ -35,7 +45,7 @@ class ProductCommentModel {
   final String comment;
   final int productId;
   final String userId;
-  final UserModel user; // قد نحتاج بيانات المستخدم لعرض صورته واسمه
+  final UserModel? user; // قد نحتاج بيانات المستخدم لعرض صورته واسمه
   final DateTime? createdAt;
 
   ProductCommentModel({
@@ -45,7 +55,7 @@ class ProductCommentModel {
     required this.productId,
     // required this.userImage,
     required this.userId,
-    required this.user,
+    this.user,
     this.createdAt,
   });
 

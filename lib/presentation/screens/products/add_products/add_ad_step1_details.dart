@@ -5,6 +5,8 @@ import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/configurations/resources/assets_manager.dart';
 import 'package:ye_hraj/presentation/custom_widgets/cust_svg_icons.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_bottom_sheet/custom_bottom_sheet_list.dart';
+import 'package:ye_hraj/presentation/custom_widgets/loading_widgets.dart';
+import 'package:ye_hraj/presentation/screens/common/common_view_model.dart';
 import '../../../custom_widgets/custom_text.dart';
 import 'add_ad_view_model.dart';
 
@@ -15,6 +17,7 @@ class AddAdStep1Details extends StatelessWidget {
   Widget build(BuildContext context) {
     // استدعاء الـ ViewModel
     final vm = Provider.of<AddAdViewModel>(context);
+    CommonViewModel commonViewModel = Provider.of<CommonViewModel>(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,27 +29,50 @@ class AddAdStep1Details extends StatelessWidget {
         // الفئة الرئيسية (إجباري)
         _buildLabel(context, 'الفئة الرئيسية', isRequired: true),
 
-        _buildDropdown(
-          context: context,
-          hint: 'اختر الفئة...',
-          value: vm.selectedMainCategory,
-          items: vm.mainCategories,
-          onChanged: vm.setMainCategory,
+        CustomBottomSheetWithSearch(
+          cotx: context,
+          bottomSheetTitle: 'اختر الفئة...',
+          hint: vm.selectedMainCategory?.name ?? 'اختر الفئة...',
+          listOfItems: commonViewModel.categoriesList,
+          onItemTap:
+              (
+                String? name,
+                int? id, {
+                int? indexOfSelectedItem,
+                dynamic selectedItem,
+              }) {
+                Navigator.pop(context);
+                vm.setMainCategory(context, id);
+              },
         ),
 
         // الفئة الفرعية (اختياري)
         const SizedBox(height: 16),
+
         _buildLabel(context, 'الفئة الفرعية (اختياري)', isRequired: false),
-        _buildDropdown(
-          context: context,
-          hint: 'اختر الفئة الفرعية...',
-          value: vm.selectedSubCategory,
-          items: vm.subCategories,
-          onChanged: vm.setSubCategory,
+
+        CustomBottomSheetWithSearch(
+          cotx: context,
+          bottomSheetTitle: 'اختر الفئة...',
+          hint: vm.selectedSubCategory?.name ?? 'اختر الفئة...',
+          listOfItems: commonViewModel.subCategories,
+          isLoading: commonViewModel.isLoadingSubCategories,
+          onItemTap:
+              (
+                String? name,
+                int? id, {
+                int? indexOfSelectedItem,
+                dynamic selectedItem,
+              }) {
+                Navigator.pop(context);
+                vm.setSubCategory(context, id);
+              },
         ),
 
         const SizedBox(height: 24),
+
         const Divider(color: Color(0xFFE1E8EF), thickness: 1),
+
         const SizedBox(height: 24),
 
         // --- 2. تفاصيل الإعلان ---
@@ -80,8 +106,8 @@ class AddAdStep1Details extends StatelessWidget {
                 context: context,
                 title: 'جديد',
                 iconAssetString: IconAssets.newIconContainer,
-                isSelected: vm.condition == 'new',
-                onTap: () => vm.setCondition('new'),
+                isSelected: vm.condition == 1,
+                onTap: () => vm.setCondition(1),
                 activeColor: const Color(0xFF21C55E),
                 // أخضر حسب تصميم فيجما
                 tagText: 'جديد',
@@ -93,8 +119,8 @@ class AddAdStep1Details extends StatelessWidget {
                 context: context,
                 title: 'مستعمل',
                 iconAssetString: IconAssets.usedIconContainer,
-                isSelected: vm.condition == 'used',
-                onTap: () => vm.setCondition('used'),
+                isSelected: vm.condition == 2,
+                onTap: () => vm.setCondition(2),
                 activeColor: const Color(0xFFF59E0A),
                 // برتقالي حسب تصميم فيجما
                 tagText: 'مستعمل',
@@ -116,12 +142,40 @@ class AddAdStep1Details extends StatelessWidget {
         // المدينة
         const SizedBox(height: 16),
         _buildLabel(context, 'المدينة', isRequired: true),
-        _buildDropdown(
-          context: context,
-          hint: 'اختر المدينة',
-          value: vm.selectedCity,
-          items: vm.cities,
-          onChanged: vm.setCity,
+        CustomBottomSheetWithSearch(
+          cotx: context,
+          bottomSheetTitle: 'اختر المدينة',
+          hint: vm.selectedCity?.name ??  'اختر المدينة',
+          listOfItems: commonViewModel.cities,
+          onItemTap:
+              (
+                String? name,
+                int? id, {
+                int? indexOfSelectedItem,
+                dynamic selectedItem,
+              }) {
+                Navigator.pop(context);
+                vm.setCity(context, id);
+              },
+        ),
+        const SizedBox(height: 10),
+
+        CustomBottomSheetWithSearch(
+          cotx: context,
+          bottomSheetTitle: 'اختر المنطقة',
+          hint: vm.selectedRegion?.name ?? 'اختر المنطقة',
+          listOfItems: commonViewModel.regions,
+          isLoading: commonViewModel.isLoadingRegion,
+          onItemTap:
+              (
+                String? name,
+                int? id, {
+                int? indexOfSelectedItem,
+                dynamic selectedItem,
+              }) {
+                Navigator.pop(context);
+                vm.setRegion(context, id);
+              },
         ),
 
         // --- 3. صندوق النصائح ---
@@ -238,9 +292,8 @@ class AddAdStep1Details extends StatelessWidget {
         child: DropdownButton<String>(
           value: value,
           hint: CustomText(
-            title:
-            hint,
-              color: Color(0xFFA9A9A9),
+            title: hint,
+            color: Color(0xFFA9A9A9),
             size: Theme.of(context).textTheme.bodySmall!.fontSize! - 3,
           ),
           isExpanded: true,
@@ -252,11 +305,9 @@ class AddAdStep1Details extends StatelessWidget {
             return DropdownMenuItem<String>(
               value: item,
               child: CustomText(
-                title:
-                item,
-                  color: Color(0xFF0F162A),
+                title: item,
+                color: Color(0xFF0F162A),
                 size: Theme.of(context).textTheme.bodySmall!.fontSize! - 3,
-
               ),
             );
           }).toList(),
@@ -278,10 +329,15 @@ class AddAdStep1Details extends StatelessWidget {
       bottomSheetTitle: value ?? 'اختر من القائمة',
       hint: hint,
       listOfItems: items,
-      onItemTap: (String? name, int? id,
-          {int? indexOfSelectedItem, dynamic selectedItem}) {
-        onChanged(name);
-      },
+      onItemTap:
+          (
+            String? name,
+            int? id, {
+            int? indexOfSelectedItem,
+            dynamic selectedItem,
+          }) {
+            onChanged(name);
+          },
     );
   }
 
@@ -323,9 +379,9 @@ class AddAdStep1Details extends StatelessWidget {
               children: [
                 CusSvgIcons(
                   iconAssetString: iconAssetString,
-                  size: isTablet(context)? 50 : 35,
+                  size: isTablet(context) ? 50 : 35,
                 ),
-                SizedBox(width: 10,),
+                SizedBox(width: 10),
                 Center(
                   child: CustomText(
                     title: title,

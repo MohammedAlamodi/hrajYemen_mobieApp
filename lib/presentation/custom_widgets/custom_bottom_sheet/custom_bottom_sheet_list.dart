@@ -5,7 +5,7 @@ import '../../../configurations/localization/i18n.dart';
 import '../../../configurations/resources/app_colors.dart';
 import '../custom_text.dart';
 import '../custom_text_field.dart';
-
+import '../loading_widgets.dart';
 
 class CustomBottomSheetWithSearch extends StatelessWidget {
   final BuildContext cotx;
@@ -17,9 +17,15 @@ class CustomBottomSheetWithSearch extends StatelessWidget {
   final String? titleOutOfCard;
   final double? padding;
   final double? withOfName;
+  final bool? isLoading;
   final List listOfItems;
-  final Function(String? name, int? id,
-      {int? indexOfSelectedItem, dynamic selectedItem})? onItemTap;
+  final Function(
+    String? name,
+    int? id, {
+    int? indexOfSelectedItem,
+    dynamic selectedItem,
+  })?
+  onItemTap;
   final double? borderRadius;
   final double? size;
 
@@ -33,6 +39,7 @@ class CustomBottomSheetWithSearch extends StatelessWidget {
     required this.bottomSheetTitle,
     required this.hint,
     this.title,
+    this.isLoading,
     this.borderColor,
     this.withOfName,
     this.titleOutOfCard,
@@ -62,7 +69,7 @@ class CustomBottomSheetWithSearch extends StatelessWidget {
           else
             const SizedBox(),
           GestureDetector(
-            onTap: () {
+            onTap:isLoading == true? null : () {
               FocusScope.of(context).requestFocus(FocusNode());
 
               _showModal(context);
@@ -71,32 +78,56 @@ class CustomBottomSheetWithSearch extends StatelessWidget {
               margin: EdgeInsets.symmetric(horizontal: padding ?? 8),
               height: 55,
               decoration: BoxDecoration(
-                  border: Border.all(
-                      width: 1,
-                      color: errorTitle != null ? Colors.redAccent : title!=null ? AppColors.current.primary: borderColor ?? Colors.grey),
-                  borderRadius: BorderRadius.circular(borderRadius!),
-                  color: Colors.white),
+                border: Border.all(
+                  width: 1,
+                  color: errorTitle != null
+                      ? Colors.redAccent
+                      : title != null
+                      ? AppColors.current.primary
+                      : borderColor ?? Colors.grey,
+                ),
+                borderRadius: BorderRadius.circular(borderRadius!),
+                color: Colors.white,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10.0),
-                    child: SizedBox(
-                      width: withOfName,
-                      child: CustomText(
-                        title: title ?? hint,
-                        size: size ??
-                            Theme.of(context).textTheme.bodySmall!.fontSize,
-                        maxLines: 1,
+                  isLoading == true
+                      ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 15),
+                        child: CustomLoadingHorzWidget(
+                            color: AppColors.current.blue,
+                            text: S.of(context)!.loading,
+                            size:
+                                Theme.of(context).textTheme.bodySmall!.fontSize! -
+                                2,
+                            textSize:
+                                Theme.of(context).textTheme.bodySmall!.fontSize! -
+                                2,
+                          ),
+                      )
+                      : Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10.0),
+                          child: SizedBox(
+                            width: withOfName,
+                            child: CustomText(
+                              title: title ?? hint,
+                              size:
+                                  size ??
+                                  Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall!.fontSize,
+                              maxLines: 1,
 
-                        color: title!=null?Colors.black : Colors.grey,
-                        // fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
+                              color: title != null ? Colors.black : Colors.grey,
+                              // fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
                   const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 5.0),
-                      child: Icon(Icons.arrow_drop_down_sharp)),
+                    padding: EdgeInsets.symmetric(horizontal: 5.0),
+                    child: Icon(Icons.arrow_drop_down_sharp),
+                  ),
                 ],
               ),
             ),
@@ -125,131 +156,134 @@ class CustomBottomSheetWithSearch extends StatelessWidget {
 
   _showModal(context) {
     return showMaterialModalBottomSheet(
-        isDismissible: true,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20.0),
-        ),
-        context: context,
-        builder: (context) {
-          //3
-          return Container(
-            padding: EdgeInsets.only(
-                bottom: MediaQuery.of(context).viewInsets.bottom),
-            height: heightOfScreen(context) * 0.85,
-            decoration: BoxDecoration(
-              // border: Border.all(width: 1, color: borderColor ?? AppColors.current.primary),
-              borderRadius: BorderRadius.circular(borderRadius!),
-              color: Colors.white,
-            ),
-            child: StatefulBuilder(
-                builder: (BuildContext context, StateSetter setState) {
+      isDismissible: true,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.0)),
+      context: context,
+      builder: (context) {
+        //3
+        return Container(
+          padding: EdgeInsets.only(
+            bottom: MediaQuery.of(context).viewInsets.bottom,
+          ),
+          height: heightOfScreen(context) * 0.85,
+          decoration: BoxDecoration(
+            // border: Border.all(width: 1, color: borderColor ?? AppColors.current.primary),
+            borderRadius: BorderRadius.circular(borderRadius!),
+            color: Colors.white,
+          ),
+          child: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
               return Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(
-                      height: 10,
-                    ),
+                    const SizedBox(height: 10),
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 8),
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       child: CustomText(
                         title: bottomSheetTitle,
                         fontWeight: FontWeight.bold,
                         size: Theme.of(context).textTheme.bodyLarge!.fontSize,
                       ),
                     ),
-                    const SizedBox(
-                      height: 10,
-                    ),
-                    const Divider(
-                      color: Colors.grey,
-                      height: 0.2,
-                    ),
-                    const SizedBox(
-                      height: 10,
-                    ),
+                    const SizedBox(height: 10),
+                    const Divider(color: Colors.grey, height: 0.2),
+                    const SizedBox(height: 10),
                     Padding(
-                        padding: const EdgeInsets.all(8),
-                        child: CustomTextField(
-                          controller: textController,
-                          prefixIcon: const Icon(Icons.search),
-                          suffixIcon: IconButton(
-                            onPressed: () {
-                              setState(() {
-                                _filteredListOfItems = _buildSearchList('');
-                                textController.clear();
-                              });
-                            },
-                            icon: const Icon(Icons.cancel_outlined),
-                          ),
-                          hint: S.of(context)!.search,
-                          onChange: (value) {
-                            //4
+                      padding: const EdgeInsets.all(8),
+                      child: CustomTextField(
+                        controller: textController,
+                        prefixIcon: const Icon(Icons.search),
+                        suffixIcon: IconButton(
+                          onPressed: () {
                             setState(() {
-                              _filteredListOfItems = _buildSearchList(value);
+                              _filteredListOfItems = _buildSearchList('');
+                              textController.clear();
                             });
                           },
-                        )),
+                          icon: const Icon(Icons.cancel_outlined),
+                        ),
+                        hint: S.of(context)!.search,
+                        onChange: (value) {
+                          //4
+                          setState(() {
+                            _filteredListOfItems = _buildSearchList(value);
+                          });
+                        },
+                      ),
+                    ),
                     Expanded(
                       child: ListView.separated(
-                          padding: const EdgeInsets.all(0),
-                          itemCount: (_filteredListOfItems != null &&
-                                  _filteredListOfItems!.isNotEmpty)
-                              ? _filteredListOfItems!.length
-                              : listOfItems.length,
-                          separatorBuilder: (context, int ing) {
-                            return const Divider(
-                              height: 0.1,
-                            );
-                          },
-                          itemBuilder: (context, index) {
-                            return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: InkWell(
-
-                                  //6
-                                  child: (_filteredListOfItems != null &&
-                                          _filteredListOfItems!.isNotEmpty)
-                                      ? _showBottomSheetWithSearch(
-                                          context, index, _filteredListOfItems!)
-                                      : _showBottomSheetWithSearch(
-                                          context, index, listOfItems),
-                                  onTap: () {
-                                    onItemTap!(
+                        padding: const EdgeInsets.all(0),
+                        itemCount:
+                            (_filteredListOfItems != null &&
+                                _filteredListOfItems!.isNotEmpty)
+                            ? _filteredListOfItems!.length
+                            : listOfItems.length,
+                        separatorBuilder: (context, int ing) {
+                          return const Divider(height: 0.1);
+                        },
+                        itemBuilder: (context, index) {
+                          return Padding(
+                            padding: const EdgeInsets.all(8.0),
+                            child: InkWell(
+                              //6
+                              child:
+                                  (_filteredListOfItems != null &&
+                                      _filteredListOfItems!.isNotEmpty)
+                                  ? _showBottomSheetWithSearch(
+                                      context,
+                                      index,
+                                      _filteredListOfItems!,
+                                    )
+                                  : _showBottomSheetWithSearch(
+                                      context,
+                                      index,
+                                      listOfItems,
+                                    ),
+                              onTap: () {
+                                onItemTap!(
+                                  _filteredListOfItems != null
+                                      ? _filteredListOfItems![index].name
+                                      : listOfItems[index].name,
+                                  _filteredListOfItems != null
+                                      ? _filteredListOfItems![index].id
+                                      : listOfItems[index].id,
+                                  indexOfSelectedItem:
                                       _filteredListOfItems != null
-                                          ? _filteredListOfItems![index].name
-                                          : listOfItems[index].name,
-                                      _filteredListOfItems != null
-                                          ? _filteredListOfItems![index].id
-                                          : listOfItems[index].id,
-                                      indexOfSelectedItem:
-                                          _filteredListOfItems != null
-                                              ? listOfItems.indexOf(
-                                                  _filteredListOfItems![index])
-                                              : index,
-                                      selectedItem: _filteredListOfItems != null
-                                          ? _filteredListOfItems![index]
-                                          : listOfItems[index],
-                                    );
-                                    // debugPrint('************ ${
-                                    //     (_filteredListOfItems !=
-                                    //         null &&
-                                    //         _filteredListOfItems!.isNotEmpty)
-                                    //         ? _filteredListOfItems![index].name
-                                    //         : listOfItems[index].name
-                                    // }');
-                                  }),
-                            );
-                          }),
-                    )
+                                      ? listOfItems.indexOf(
+                                          _filteredListOfItems![index],
+                                        )
+                                      : index,
+                                  selectedItem: _filteredListOfItems != null
+                                      ? _filteredListOfItems![index]
+                                      : listOfItems[index],
+                                );
+                                // debugPrint('************ ${
+                                //     (_filteredListOfItems !=
+                                //         null &&
+                                //         _filteredListOfItems!.isNotEmpty)
+                                //         ? _filteredListOfItems![index].name
+                                //         : listOfItems[index].name
+                                // }');
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ],
                 ),
               );
-            }),
-          );
-        });
+            },
+          ),
+        );
+      },
+    );
   }
 
   //8
@@ -257,9 +291,10 @@ class CustomBottomSheetWithSearch extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.all(8.0),
       child: CustomText(
-          title: listOfCities[index].name,
-          size: Theme.of(context).textTheme.bodySmall!.fontSize,
-          textAlign: TextAlign.start),
+        title: listOfCities[index].name,
+        size: Theme.of(context).textTheme.bodySmall!.fontSize,
+        textAlign: TextAlign.start,
+      ),
     );
   }
 

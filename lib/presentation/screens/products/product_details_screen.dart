@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ye_hraj/configurations/data/end_points_manager.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
+import 'package:ye_hraj/model/user_model.dart';
 import '../../custom_widgets/Custom_header_bar.dart';
 import '../../custom_widgets/custom_text.dart';
 import '../home/custome_widgets/product_bottom_bar.dart';
@@ -28,9 +30,10 @@ class ProductDetailsScreen extends StatelessWidget {
             }
 
             // --- حالة وجود البيانات (عرض الصفحة الحقيقية) ---
-            final product = vm.productDetails!;
+            final product = vm.productDetails;
 
-            return Stack(
+            return product!=null?
+            Stack(
               children: [
                 CustomScrollView(
                   slivers: [
@@ -80,7 +83,7 @@ class ProductDetailsScreen extends StatelessWidget {
                             context,
                             Icons.location_on_outlined,
                             'المدينة :',
-                            '${product.region?.name ?? ''} - ${product.city?.name ?? ''}',
+                            '${product.cityName ?? ''} - ${product.regionName ?? ''}',
                           ),
 
                           const SizedBox(height: 16),
@@ -141,7 +144,13 @@ class ProductDetailsScreen extends StatelessWidget {
                           const SizedBox(height: 16),
 
                           // البائع
-                          _buildSellerCard(context, product.user),
+                          _buildSellerCard(
+                            context: context,
+                            sellerId: product.user?.id,
+                            sellerName: product.user?.fullName ?? '-',
+                            sellerPhone: product.user?.phoneNumber ?? '-',
+                            sellerImageUrl: product.user?.profileImageUrl,
+                          ),
 
                           const SizedBox(height: 16),
 
@@ -169,8 +178,25 @@ class ProductDetailsScreen extends StatelessWidget {
                   ),
                 ),
               ],
+            ) :
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CustomText(
+                    title: 'حدث خطأ أثناء تحميل تفاصيل المنتج.',
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  const SizedBox(height: 10),
+                  ElevatedButton(
+                    onPressed: () => vm.loadProductDetails(productId),
+                    child: const CustomText(title: 'إعادة المحاولة'),
+                  ),
+                ],
+              )
             );
-          },
+          }
         ),
       ),
     );
@@ -256,7 +282,13 @@ class ProductDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSellerCard(BuildContext context, seller) {
+  Widget _buildSellerCard({
+    required BuildContext context,
+    String? sellerId,
+    String? sellerName,
+    String? sellerPhone,
+    String? sellerImageUrl,
+  }) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -274,26 +306,54 @@ class ProductDetailsScreen extends StatelessWidget {
 
           Row(
             children: [
-              CircleAvatar(backgroundImage: NetworkImage(seller.imageUrl)),
+              CircleAvatar(
+                  backgroundImage:
+                  NetworkImage(sellerImageUrl ?? EndPointsStrings.emptyImageUrl),
+              ),
               const SizedBox(width: 10),
               SizedBox(height: 16),
-              Row(
+              Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   CustomText(
-                    title: seller.name,
+                    title: sellerName ?? '-',
                     size: Theme.of(context).textTheme.bodySmall!.fontSize,
-
                     fontWeight: FontWeight.bold,
                   ),
-                  // SizedBox(width: 10),
-                  // CustomText(
-                  //   title: seller.role,
-                  //   size: Theme.of(context).textTheme.bodySmall!.fontSize! - 5,
-                  //   color: Colors.grey,
-                  // ),
+
+                  SizedBox(height: 10,),
+
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.all(4.0),
+                          child: Icon(
+                            Icons.phone_outlined, color: Colors.green,
+                            size: Theme.of(context).textTheme.bodySmall!.fontSize! + 3
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 5,),
+                      Padding(
+                        padding: const EdgeInsets.all(4.0),
+                        child: CustomText(
+                          title: sellerPhone ?? '-',
+                          size: Theme.of(context).textTheme.bodySmall!.fontSize,
+                          color: Colors.grey,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
                 ],
               ),
+
             ],
           ),
         ],

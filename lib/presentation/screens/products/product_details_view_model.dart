@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 
 import 'package:flutter/material.dart';
 import 'package:ye_hraj/configurations/data/end_points_manager.dart';
+import 'package:ye_hraj/configurations/resources/strings_manager.dart';
+import 'package:ye_hraj/configurations/user_preferences.dart';
 import 'package:ye_hraj/model/product_image_model.dart';
 import 'package:ye_hraj/model/product_model.dart';
 
@@ -67,20 +69,16 @@ class ProductDetailsViewModel extends ChangeNotifier {
   }
 
   // 3. دالة إضافة التعليق
-  void addComment() {
+  Future<void> addComment() async {
     if (commentController.text.trim().isEmpty) return;
 
+    String currentUserId = await UserPreferences().getString(key: AppStrings.userIdKey, defaultValue: '');
     // محاكاة إضافة تعليق (في الواقع ترسل للسيرفر)
     final newComment = ProductCommentModel(
       id: 1,
       comment: commentController.text,
       productId: _productDetails?.id ?? 0,
-      userId: EndPointsStrings.userIdConst,
-      user: UserModel(
-        id: EndPointsStrings.userIdConst.toString(),
-        fullName: "أنا المستخدم",
-        profileImageUrl: 'https://placehold.co/80x80?text=S'
-      ),
+      userId: currentUserId,
     );
 
     // إضافة للقائمة وتحديث الواجهة
@@ -99,35 +97,101 @@ class ProductDetailsViewModel extends ChangeNotifier {
     super.dispose();
   }
 
-  // دالة الانتقال للشات
-  void startChatWithSeller(BuildContext context, ProductModel product) {
-    // 1. تحقق أن المستخدم مسجل دخول
-    // if (currentUserId == null) { goToLogin(); return; }
+  Future<void> startChatWithSeller(BuildContext context, ProductModel product) async {
+    // 1. جلب بيانات المستخدم الحالي (أنت) من الذاكرة المحلية
+    String currentUserId = await UserPreferences().getString(key: AppStrings.userIdKey, defaultValue: '');
+
+    // تحقق مبدئي: إذا لم يكن مسجل دخول، وجهه لصفحة تسجيل الدخول
+    if (currentUserId.isEmpty) {
+      // Navigator.pushNamed(context, '/login');
+      return;
+    }
+
+    String senderName = await UserPreferences().getString(key: AppStrings.userNameKey, defaultValue: 'مستخدم');
+    String senderImagePrfile = await UserPreferences().getString(key: 'senderImagePrfile', defaultValue: '');
+
+    // ⚠️ خطوة مهمة جداً: التأكد أن الشاشة لا تزال مفتوحة بعد الـ await
+    if (!context.mounted) return;
+
+    // تحديد آيدي البائع (نبحث في userId المباشر أولاً، ثم داخل كائن user)
+    String sellerId = product.user?.id ?? '0';
+
+    debugPrint("Current User ID: $currentUserId, Seller ID: $sellerId");
 
     // 2. تحقق أن المستخدم لا يراسل نفسه
-    if (EndPointsStrings.userIdConst == product.user?.id) {
+    if (currentUserId == sellerId) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('لا يمكنك مراسلة نفسك!')),
+        const SnackBar(
+          content: Text('لا يمكنك مراسلة نفسك!'),
+          backgroundColor: Colors.orange,
+        ),
       );
       return;
     }
 
-    // 3. الانتقال للشات مع تمرير "المنتج"
+    // محاولة جلب صورة البائع من الموديل (إذا كانت متوفرة)
+    String sellerImage = '';
+    if (product.user != null && product.user!.profileImageUrl != null) {
+      sellerImage = product.user!.profileImageUrl!;
+    }
+
+    // 3. الانتقال للشات مع تمرير البيانات الحقيقية للطرفين + المنتج
     Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => ChatScreen(
-          currentUserId: EndPointsStrings.userIdConst,   // آيدي المستخدم الحالي (أنا)
-          otherUserId: product.user!.id,  // آيدي البائع (صاحب الإعلان)
-          otherUserName: product.user?.fullName ?? '', // اسم البائع (للعرض في الهيدر)
+          // بياناتي أنا (التي جلبناها من الـ Preferences)
+          currentUserId: currentUserId,
+          senderName: senderName,
+          senderProfileImageUrl: senderImagePrfile,
 
-          // 🔥🔥🔥 السحر هنا 🔥🔥🔥
-          // تمرير المنتج هو ما سيجعل الكارد يظهر فوق الشات
+          // بيانات البائع (التي جلبناها من الإعلان)
+          otherUserId: sellerId,
+          otherUserName: product.user?.fullName ?? 'صاحب الإعلان',
+          otherUserImageUrl: sellerImage, // 👈 تمرير صورة البائع إن وجدت
+
+          // سياق المحادثة (المنتج)
           productContext: product,
         ),
       ),
     );
   }
+
+  // دالة الانتقال للشات
+  // Future<void> startChatWithSeller(BuildContext context, ProductModel product) async {
+  //   // 1. تحقق أن المستخدم مسجل دخول
+  //   // if (currentUserId == null) { goToLogin(); return; }
+  //
+  //   String currentUserId = await UserPreferences().getString(key: AppStrings.userIdKey, defaultValue: '');
+  //
+  //   debugPrint("Current User ID: $currentUserId, Seller ID: ${product.user?.id.toString()}");
+  //   // 2. تحقق أن المستخدم لا يراسل نفسه
+  //   if (currentUserId.toString() == product.user?.id.toString()) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text('لا يمكنك مراسلة نفسك!')),
+  //     );
+  //     return;
+  //   }
+  //
+  //   String senderName = await UserPreferences().getString(key: AppStrings.userNameKey, defaultValue: '--'); // يمكنك تعديل هذا ليكون اسم المستخدم الحقيقي إذا متوفر
+  //   String senderImagePrfile = await UserPreferences().getString(key: 'senderImagePrfile', defaultValue: '--'); // يمكنك تعديل هذا ليكون اسم المستخدم الحقيقي إذا متوفر
+  //
+  //   // 3. الانتقال للشات مع تمرير "المنتج"
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(
+  //       builder: (_) => ChatScreen(
+  //         currentUserId: currentUserId,   // آيدي المستخدم الحالي (أنا)
+  //         senderName: senderName,   // آيدي المستخدم الحالي (أنا)
+  //         senderProfileImageUrl: senderImagePrfile,   // آيدي المستخدم الحالي (أنا)
+  //         otherUserId: product.user?.id ?? '0',  // آيدي البائع (صاحب الإعلان)
+  //         otherUserName: product.userName ?? '', // اسم البائع (للعرض في الهيدر)
+  //         otherUserImageUrl: '',
+  //         productContext: product,
+  //       ),
+  //     ),
+  //   );
+  // }
 }
 
 // class ProductDetailsViewModel extends ChangeNotifier {

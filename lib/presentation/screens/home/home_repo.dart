@@ -1,271 +1,235 @@
-import 'dart:math';
-import 'package:flutter/material.dart';
+import 'dart:io';
 
+import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
+import 'package:ye_hraj/configurations/data/end_points_manager.dart';
+
+import '../../../configurations/data/api_services.dart';
 import '../../../model/category_model.dart';
-import '../../../model/product_condition.dart';
-import '../../../model/product_image_model.dart';
 import '../../../model/product_model.dart';
-import '../../../model/user_model.dart';
-import '../my_ads/custom_widgets/my_ad_card.dart'; // للأيقونات إذا لزم الأمر
 
 class HomeRepository {
-  // =========================================================
-  // 1. جلب قائمة المنتجات (للمتجر أو الصفحة الرئيسية)
-  // =========================================================
+
   Future<List<ProductModel>> fetchProducts({
     required int page,
-    int limit = 20,
+    int limit = 5,
+    String? search,
+    int? categoryId,
+    int? subCategoryId,
+    int? cityId,
+    double? minPrice,
+    double? maxPrice,
+    int? condition, // 1 أو 2
+    bool myProducts = false,
+    bool myFavorites = false,
+    bool? isActive,
+    String? orderBy,
+    bool ascendingOrder = false,
   }) async {
-    // محاكاة تأخير الشبكة
-    await Future.delayed(const Duration(seconds: 2));
+    await ApiService().getToken();
 
-    // إذا الصفحة > 5 نوقف التحميل (نهاية البيانات)
-    if (page > 5) return [];
+    try {
+      // 1. تجهيز الفلاتر (Parameters)
+      Map<String, dynamic> queryParams = {
+        'PageNumber': page,
+        'PageSize': limit,
+        'myProducts': myProducts,
+        'myFavorites': myFavorites,
+        'FilterQuery.AscendingOrder': ascendingOrder,
+      };
 
-    return List.generate(limit, (index) {
-      final id = ((page - 1) * limit) + index;
+      // إضافة الفلاتر التي لها قيمة فقط
+      if (search != null && search.isNotEmpty) queryParams['FilterQuery.Search'] = search;
+      if (categoryId != null) queryParams['FilterQuery.CategoryId'] = categoryId;
+      if (subCategoryId != null) queryParams['FilterQuery.SubCategoryId'] = subCategoryId;
+      if (cityId != null) queryParams['FilterQuery.CityId'] = cityId;
+      if (minPrice != null) queryParams['FilterQuery.MinPrice'] = minPrice;
+      if (maxPrice != null) queryParams['FilterQuery.MaxPrice'] = maxPrice;
+      if (condition != null) queryParams['FilterQuery.Condition'] = condition;
+      if (isActive != null) queryParams['isActive'] = isActive;
+      if (orderBy != null && orderBy.isNotEmpty) queryParams['FilterQuery.OrderBy'] = orderBy;
 
-      return ProductModel(
-        id: id,
-        title: 'سيارة تويوتا كامري موديل 202${Random().nextInt(4)} نظيفة',
-        description: 'سيارة بحالة ممتازة، استخدام شخصي، بودي بلد، الممشى قليل...',
-        price: (Random().nextInt(50) + 10) * 1000.0, // Double
-        condition: index % 2 == 0 ? ProductCondition.newItem : ProductCondition.used,
-        status: AdStatus.active.toString(),
-        // إعدادات التواصل
-        allowChat: true,
-        allowCall: true,
-        allowWhatsApp: index % 3 == 0,
-        showPhoneNumber: true,
-        viewsCount: Random().nextInt(500),
-
-        createdAt: DateTime.now().subtract(Duration(days: Random().nextInt(10))),
-
-        // العلاقات
-        userId: 'user_$id',
-        user: _getDummyUser('user_$id', 'البائع $id'), // بيانات البائع
-
-        categoryId: 1,
-        category: null, // في القائمة المصغرة قد لا نحتاج الكائن كاملاً
-
-        subCategoryId: 101,
-        subCategory: _getRandomSubCategory(),
-
-        cityId: 1,
-        city: _getRandomCity(),
-
-        regionId: 1,
-        region: _getRandomRegion(),
-
-        // الصور (نستخدم موديل الصور الجديد)
-        images: [
-          ProductImageModel(
-              id: 1,
-              imageUrl: 'https://arabgt.com/wp-content/uploads/2021/08/%D8%A7%D8%B3%D8%B9%D8%A7%D8%B1-%D9%88%D9%85%D9%88%D8%A7%D8%B5%D9%81%D8%A7%D8%AA-%D8%B3%D9%8A%D8%A7%D8%B1%D9%87-%D9%8A%D8%A7%D8%B1%D8%B3-2021-4.jpg',
-              isMain: true,
-              productId: id
-          ),
-          ProductImageModel(
-              id: 2,
-              imageUrl: 'https://placehold.co/400x300/0D9488/white?text=Side+View',
-              isMain: false,
-              productId: id
-          ),
-        ],
-        comments: [], // في القائمة الرئيسية عادة لا نجلب التعليقات
+      // 2. إرسال الطلب للسيرفر
+      // تأكد أن المسار 'api/Products' صحيح حسب مشروعك
+      final response = await ApiService().dio.get(
+        EndPointsStrings.getProductsEndPoint,
+        queryParameters: queryParams,
       );
-    });
+
+      // 3. معالجة الاستجابة
+      if (response.statusCode == 200 && response.data != null) {
+        var data = response.data;
+
+        // التحقق أن البيانات تحتوي على المفتاح "items"
+        if (data is Map && data['items'] != null) {
+          List<ProductModel> products = (data['items'] as List)
+              .map((e) => ProductModel.fromJson(e))
+              .toList();
+
+          return products;
+        }
+      }
+
+      return []; // إرجاع قائمة فارغة إذا لم تكن هناك بيانات
+
+    } on DioException catch (e) {
+      debugPrint("خطأ شبكة في جلب المنتجات: ${e.message}");
+      return [];
+    } catch (e) {
+      debugPrint("خطأ في معالجة المنتجات: $e");
+      return [];
+    }
   }
 
-  // =========================================================
-  // 2. جلب الفئات (الأقسام)
-  // =========================================================
   Future<List<CategoryModel>> fetchCategories() async {
-    await Future.delayed(const Duration(seconds: 1)); // محاكاة الشبكة
+    await ApiService().getToken();
 
-    return [
-      CategoryModel(
-          id: 1,
-          name: 'سيارات',
-          icon: Icons.directions_car_filled, // أيقونة
-          color: const Color(0xFF2462EB),    // لون أزرق
-          subCategories: [
-            SubCategoryModel(id: 11, name: 'تويوتا', categoryId: 1),
-            SubCategoryModel(id: 12, name: 'هونداي', categoryId: 1),
-            SubCategoryModel(id: 13, name: 'فورد', categoryId: 1),
-          ]
-      ),
-      CategoryModel(
-          id: 2,
-          name: 'عقارات',
-          icon: Icons.home_work,
-          color: const Color(0xFF10B981),    // لون أخضر
-          subCategories: [
-            SubCategoryModel(id: 21, name: 'شقق للبيع', categoryId: 2),
-            SubCategoryModel(id: 22, name: 'أراضي', categoryId: 2),
-          ]
-      ),
-      CategoryModel(
-          id: 3,
-          name: 'أجهزة',
-          icon: Icons.phone_android,
-          color: const Color(0xFFF59E0B),    // لون برتقالي
-          subCategories: []
-      ),
-      CategoryModel(
-          id: 4,
-          name: 'أزياء',
-          icon: Icons.checkroom,
-          color: const Color(0xFFEC4899),    // لون وردي
-          subCategories: []
-      ),
-      CategoryModel(
-          id: 5,
-          name: 'أثاث',
-          icon: Icons.chair,
-          color: const Color(0xFF8B5CF6),    // لون بنفسجي
-          subCategories: []
-      ),
-      CategoryModel(
-          id: 6,
-          name: 'حيوانات',
-          icon: Icons.pets,
-          color: const Color(0xFF795548),    // لون بني
-          subCategories: []
-      ),
-      CategoryModel(
-          id: 7,
-          name: 'خدمات',
-          icon: Icons.handyman,
-          color: const Color(0xFF607D8B),    // لون رمادي أزرق
-          subCategories: []
-      ),
-    ];
+    try {
+      // 1. الاتصال بالـ API (تأكد من تعديل الرابط ليتناسب مع مشروعك)
+      final response = await ApiService().dio.get(EndPointsStrings.getCategoriesEndPoint); // أو حسب مسار الـ API عندك
+
+      // 2. معالجة البيانات (لأنها ترجع مصفوفة مباشرة List)
+      if (response.statusCode == 200 && response.data != null) {
+
+        // التحقق مما إذا كانت البيانات مصفوفة مباشرة (مثل الـ JSON الذي أرسلته)
+        if (response.data is List) {
+          List<CategoryModel> categories = (response.data as List)
+              .map((e) => CategoryModel.fromJson(e))
+              .toList();
+          return categories;
+        }
+        // أو إذا كانت مغلفة بـ data (احتياطياً)
+        else if (response.data is Map && response.data['data'] != null) {
+          List<CategoryModel> categories = (response.data['data'] as List)
+              .map((e) => CategoryModel.fromJson(e))
+              .toList();
+          return categories;
+        }
+      }
+
+      return []; // إرجاع قائمة فارغة إذا لم تكن هناك بيانات
+
+    } on DioException catch (e) {
+      // ⚠️ معالجة أخطاء الشبكة
+      debugPrint("خطأ في الاتصال بالشبكة (Categories): ${e.message}");
+      return [];
+
+    } catch (e) {
+      // ⚠️ معالجة أخطاء التحويل (Parsing)
+      debugPrint("خطأ في تحويل بيانات الأقسام: $e");
+      return [];
+    }
   }
 
-  // =========================================================
-  // 3. جلب تفاصيل المنتج (كاملة)
-  // =========================================================
-  // ملاحظة: قمنا بتغيير النوع المرجعي ليكون ProductModel بدلاً من ProductDetailsModel 
-  // لأن ProductModel الآن يحتوي على كل شيء (User, Comments, Images) بناءً على تحديث الـ C#
-  Future<ProductModel> fetchProductDetails(int productId) async {
-    await Future.delayed(const Duration(seconds: 2));
+  /// جلب الأقسام الفرعية (SubCategories) لقسم معين
+  Future<List<SubCategoryModel>> fetchSubCategories(int categoryId) async {
+    await ApiService().getToken();
 
-    return ProductModel(
-      id: productId,
-      title: 'تويوتا كامري 2020 نظيف جداً فل كامل',
-      description: 'السيارة بحالة الوكالة، بودي بلد، مكينة وجير عالشرط. الممشى 50 ألف كيلو فقط. جميع الصيانات في الوكالة. السيارة موجودة في المكلا للمعاينة...',
-      price: 45000.0,
-      status: AdStatus.active.toString(),
-      condition: ProductCondition.used,
+    try {
+      // إرسال الـ categoryId كـ Query Parameter أو حسب مسار الـ API لديكم
+      // مثال: api/Categories/1/SubCategories أو api/SubCategories?categoryId=1
+      final response = await ApiService().dio.get(
+        '${EndPointsStrings.getSubCategoriesEndPoint}/$categoryId', // أو حسب مسار الـ API عندك
+      );
 
-      allowChat: true,
-      allowCall: true,
-      allowWhatsApp: true,
-      showPhoneNumber: true,
+      if (response.statusCode == 200 && response.data != null) {
+        var data = response.data;
 
-      viewsCount: 1250,
-      createdAt: DateTime.now().subtract(const Duration(minutes: 12)),
-
-      userId: 'seller_123',
-      user: UserModel(
-        id: 'seller_123',
-        fullName: 'معرض النخبة',
-        profileImageUrl: 'https://placehold.co/100x100/2462EB/white?text=Seller',
-        phoneNumber: '0500000000',
-        createdAt: DateTime.now().subtract(const Duration(days: 365)),
-      ),
-
-      categoryId: 1,
-      category: CategoryModel(id: 1, name: 'سيارات', icon: Icons.directions_car_filled, color: const Color(0xFF2462EB)),
-
-      subCategoryId: 101,
-      subCategory: SubCategoryModel(id: 101, name: 'تويوتا', categoryId: 1),
-
-      cityId: 1,
-      city: CityModel(id: 1, name: 'المكلا'),
-
-      regionId: 10,
-      region: RegionModel(id: 10, name: 'فوه', cityId: 1),
-
-      images: [
-        ProductImageModel(id: 1, productId: productId, isMain: true, imageUrl: "https://arabgt.com/wp-content/uploads/2021/08/%D8%A7%D8%B3%D8%B9%D8%A7%D8%B1-%D9%88%D9%85%D9%88%D8%A7%D8%B5%D9%81%D8%A7%D8%AA-%D8%B3%D9%8A%D8%A7%D8%B1%D9%87-%D9%8A%D8%A7%D8%B1%D8%B3-2021-4.jpg"),
-        ProductImageModel(id: 2, productId: productId, isMain: false, imageUrl: "https://placehold.co/600x400/0D9488/white?text=Interior"),
-        ProductImageModel(id: 3, productId: productId, isMain: false, imageUrl: "https://placehold.co/600x400/F87315/white?text=Back"),
-      ],
-
-      comments: [
-        ProductCommentModel(
-            id: 101,
-            comment: 'كم حدك فيها من الآخر؟',
-            productId: productId,
-            userId: '21',
-            createdAt: DateTime.now().subtract(const Duration(minutes: 5)),
-            user: UserModel(
-                id: 'user_comment_1',
-                fullName: 'سالم بن محفوظ',
-                profileImageUrl: 'https://placehold.co/80x80?text=S'
-            )
-        ),
-        ProductCommentModel(
-            id: 102,
-            comment: 'ماشاء الله تبارك الله، الله يبارك لك',
-            productId: productId,
-            userId: '44',
-            createdAt: DateTime.now().subtract(const Duration(minutes: 30)),
-            user: UserModel(
-                id: 'user_comment_2',
-                fullName: 'عمر باوزير',
-                profileImageUrl: 'https://placehold.co/80x80?text=O'
-            )
-        ),
-      ],
-    );
+        // إذا كان الرد مصفوفة مباشرة (List)
+        if (data is List) {
+          return data.map((e) => SubCategoryModel.fromJson(e)).toList();
+        }
+        // إذا كان مغلفاً بـ data أو items
+        else if (data is Map && data['items'] != null) {
+          return (data['items'] as List).map((e) => SubCategoryModel.fromJson(e)).toList();
+        }
+      }
+      return [];
+    } on DioException catch (e) {
+      print("خطأ شبكة في جلب الأقسام الفرعية: ${e.message}");
+      return [];
+    } catch (e) {
+      print("خطأ في معالجة الأقسام الفرعية: $e");
+      return [];
+    }
   }
 
-  // =========================================================
-  // 4. دوال مساعدة لتوليد بيانات عشوائية (Helpers)
-  // =========================================================
+  Future<ProductModel?> fetchProductDetails(int productId) async {
+    try {
+      // 1. الاتصال بالسيرفر (تأكد أن المسار يطابق الـ API الخاص بك)
+      final response = await ApiService().dio.get('${EndPointsStrings.getProductsEndPoint}/$productId');
 
-  UserModel _getDummyUser(String id, String name) {
-    return UserModel(
-      id: id,
-      fullName: name,
-      profileImageUrl: 'https://placehold.co/100x100?text=${name.split(" ").last}',
-      createdAt: DateTime.now(),
-    );
+      // 2. معالجة الاستجابة
+      if (response.statusCode == 200 && response.data != null) {
+
+        if (response.data is Map<String, dynamic>) {
+          return ProductModel.fromJson(response.data);
+        }
+      }
+
+      return null; // إذا لم يجد المنتج أو كانت البيانات فارغة
+
+    } on DioException catch (e) {
+      // ⚠️ معالجة أخطاء الشبكة
+      if (e.response?.statusCode == 404) {
+        debugPrint("خطأ: هذا الإعلان غير موجود أو تم حذفه.");
+      } else {
+        debugPrint("خطأ شبكة في جلب تفاصيل المنتج: ${e.message}");
+      }
+      return null;
+
+    } catch (e) {
+      // ⚠️ معالجة أخطاء التحويل (Parsing)
+      debugPrint("خطأ في معالجة تفاصيل المنتج: $e");
+      return null;
+    }
   }
 
-  RegionModel _getRandomRegion() {
-    final regions = [
-      RegionModel(id: 1, cityId: 1, name: 'فوه'),
-      RegionModel(id: 2, cityId: 1, name: 'الشرج'),
-      RegionModel(id: 3, cityId: 1, name: 'الديس'),
-      RegionModel(id: 4, cityId: 2, name: 'كريتر'),
-      RegionModel(id: 5, cityId: 3, name: 'حدة'),
-    ];
-    return regions[Random().nextInt(regions.length)];
-  }
+  Future<bool> createProduct({
+    required Map<String, dynamic> data,
+    required List<File> images,
+  }) async {
+    try {
 
-  CityModel _getRandomCity() {
-    final cities = [
-      CityModel(id: 1, name: 'المكلا'),
-      CityModel(id: 2, name: 'عدن'),
-      CityModel(id: 3, name: 'صنعاء'),
-      CityModel(id: 4, name: 'تعز'),
-      CityModel(id: 5, name: 'إب'),
-    ];
-    return cities[Random().nextInt(cities.length)];
-  }
+      // 1. إنشاء كائن FormData
+      FormData formData = FormData.fromMap(data);
 
-  SubCategoryModel _getRandomSubCategory() {
-    final subs = [
-      SubCategoryModel(id: 1, categoryId: 1, name: 'تويوتا'),
-      SubCategoryModel(id: 2, categoryId: 1, name: 'هونداي'),
-      SubCategoryModel(id: 3, categoryId: 1, name: 'كيا'),
-      SubCategoryModel(id: 4, categoryId: 1, name: 'نيسان'),
-      SubCategoryModel(id: 5, categoryId: 1, name: 'فورد'),
-    ];
-    return subs[Random().nextInt(subs.length)];
+      // 2. إضافة الصور إلى الـ FormData
+      for (int i = 0; i < images.length; i++) {
+        formData.files.add(
+          MapEntry(
+            'Images', // 👈 يجب أن يطابق هذا الاسم تماماً اسم الـ Array في الـ API
+            await MultipartFile.fromFile(
+              images[i].path,
+              filename: images[i].path.split('/').last,
+            ),
+          ),
+        );
+      }
+
+      await ApiService().getToken();
+
+      // 3. إرسال الطلب للسيرفر (POST)
+      final response = await ApiService().dio.post(
+        EndPointsStrings.createProductsEndPoint, // 👈 تأكد من مسار الـ API الصحيح للإنشاء
+        data: formData,
+      );
+
+      // 4. التحقق من النجاح (عادة 200 أو 201 تعني تم الإنشاء بنجاح)
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return true;
+      }
+      return false;
+
+    } on DioException catch (e) {
+      print("خطأ أثناء رفع الإعلان: ${e.message}");
+      if (e.response != null) {
+        print("تفاصيل الخطأ من السيرفر: ${e.response?.data}");
+      }
+      return false;
+    } catch (e) {
+      print("خطأ غير متوقع: $e");
+      return false;
+    }
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_avatar.dart';
@@ -86,16 +87,22 @@ class _ProductCardHorizontalState extends State<ProductCardHorizontal> {
                           });
                         },
                         itemBuilder: (context, index) {
-                          return Image.network(
-                            images[index].imageUrl,
+                          String imageUrl = images[index].imageUrl;
+                          return imageUrl.toLowerCase().endsWith('.svg')
+                              ? SvgPicture.network(
+                            imageUrl,
                             fit: BoxFit.cover,
-                            loadingBuilder: (context, child, loadingProgress) {
-                              if (loadingProgress == null) return child;
-                              return const Center(child: Icon(Icons.image, color: Colors.grey));
-                            },
-                            errorBuilder: (context, error, stackTrace) {
-                              return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
-                            },
+                            placeholderBuilder: (BuildContext context) => const Center(
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          )
+                              : Image.network(
+                            imageUrl,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) => const Icon(
+                              Icons.image_not_supported_outlined,
+                              color: Colors.grey,
+                            ),
                           );
                         },
                       ),
@@ -170,7 +177,7 @@ class _ProductCardHorizontalState extends State<ProductCardHorizontal> {
                                     const SizedBox(width: 4),
                                     Flexible(
                                       child: CustomText(
-                                        title: '${widget.product.city?.name ?? ''} - ${widget.product.region?.name ?? ''}',
+                                        title: '${widget.product.cityName ?? ''} - ${widget.product.regionName ?? ''}',
                                         size: 10,
                                         color: const Color(0xFF63748A),
                                         maxLines: 1,

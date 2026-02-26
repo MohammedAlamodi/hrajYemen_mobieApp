@@ -4,7 +4,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart' as intl; // لتنسيق الوقت
 import 'package:ye_hraj/configurations/data/end_points_manager.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
+import 'package:ye_hraj/configurations/resources/strings_manager.dart';
+import 'package:ye_hraj/configurations/user_preferences.dart';
 import 'package:ye_hraj/presentation/custom_widgets/loading_widgets.dart';
+import 'package:ye_hraj/presentation/screens/common/common_view_model.dart';
 import '../../custom_widgets/Custom_header_bar.dart';
 import '../../custom_widgets/custom_text.dart';
 import 'chat_list_view_model.dart';
@@ -23,14 +26,16 @@ import 'chat_list_view_model.dart';
 import '../chat/chat_screen.dart';
 
 class ChatListScreen extends StatelessWidget {
-  const ChatListScreen({super.key});
+  const ChatListScreen({super.key,});
 
   @override
   Widget build(BuildContext context) {
+    CommonViewModel commonVM = Provider.of<CommonViewModel>(context, listen: false);
+    final String currentUserId = commonVM.currentUserId;
     // 1. تأكد أن هذا المتغير يحمل قيمة صحيحة وليس فارغاً
-    final String currentUserId = EndPointsStrings.userIdConst;
+    // final String currentUserId = EndPointsStrings.userIdConst;
 
-    print("ChatListScreen: Current User ID is: $currentUserId"); // للتتبع
+    debugPrint("ChatListScreen: Current User ID is: $currentUserId"); // للتتبع
 
     return ChangeNotifierProvider(
       create: (_) => ChatListViewModel(currentUserId: currentUserId),
@@ -80,22 +85,36 @@ class ChatListScreen extends StatelessWidget {
                           final doc = snapshot.data!.docs[index];
                           final data = doc.data() as Map<String, dynamic>;
 
-                          // حماية من البيانات الناقصة
                           final users = data['users'] as List<dynamic>? ?? [];
                           if (users.isEmpty) return const SizedBox();
 
+                          // الحصول على ID الطرف الآخر
                           final otherUserId = vm.getOtherUserId(users);
+
+                          final String myName = commonVM.currentUserName; // افترض أنك عرفت هذا في الـ ViewModel
+                          final String myImageUrl = '';
+
                           final lastMessage = data['lastMessage'] ?? '';
                           final Timestamp? timestamp = data['timestamp'];
 
-                          // محاكاة الاسم والصورة (لاحقاً اربطها بالباك إند)
-                          String otherUserName = "مستخدم $otherUserId";
-                          String otherUserImage = "https://placehold.co/100x100";
+                          // 🔥 جلب بيانات الطرف الآخر من الـ usersData
+                          String displayName = 'مستخدم غير معروف';
+                          String displayImage = 'https://placehold.co/100x100';
+
+                          if (data.containsKey('usersData') && data['usersData'][otherUserId] != null) {
+                            // إذا كانت المحادثة جديدة وتدعم الهيكلية الجديدة
+                            displayName = data['usersData'][otherUserId]['name'] ?? 'مستخدم';
+                            displayImage = data['usersData'][otherUserId]['image'] ?? 'https://placehold.co/100x100';
+                          } else {
+                            // Fallback للمحادثات القديمة في قاعدة البيانات حتى لا ينهار التطبيق
+                            displayName = data['senderName'] ?? 'مستخدم';
+                            displayImage = data['senderProfileImageUrl'] ?? 'https://placehold.co/100x100';
+                          }
 
                           return _ChatListItem(
-                            name: otherUserName,
+                            name: displayName,      // 👈 نعرض اسم الطرف الآخر هنا
                             message: lastMessage,
-                            imageUrl: otherUserImage,
+                            imageUrl: displayImage, // 👈 نعرض صورة الطرف الآخر هنا
                             time: _formatTime(timestamp),
                             unreadCount: 0,
                             onTap: () {
@@ -104,8 +123,13 @@ class ChatListScreen extends StatelessWidget {
                                 MaterialPageRoute(
                                   builder: (_) => ChatScreen(
                                     currentUserId: currentUserId,
+                                    // بياناتي أنا (المرسل حالياً)
+                                    senderName: myName,
+                                    senderProfileImageUrl: myImageUrl,
+                                    // بيانات الطرف الآخر
                                     otherUserId: otherUserId,
-                                    otherUserName: otherUserName,
+                                    otherUserName: displayName,
+                                    otherUserImageUrl: displayImage,
                                   ),
                                 ),
                               );

@@ -29,7 +29,9 @@ class _SplashScreenState extends State<SplashScreen> {
   bool isFirsOpenApp = true;
   bool isSPlashingOpen = false;
   String branchId = '';
-  String? userId;
+  String? loginToken;
+  String? currentUserId;
+  String? filledUserName;
 
   @override
   void initState() {
@@ -38,11 +40,7 @@ class _SplashScreenState extends State<SplashScreen> {
     startTimer();
   }
 
-  startTimer() async {
-    // bool result = await InternetConnectionChecker().hasConnection;
-
-    // await intS();
-
+  void startTimer() async {
     Timer(
       const Duration(seconds: 1),
       nextScreen,
@@ -53,13 +51,15 @@ class _SplashScreenState extends State<SplashScreen> {
     UserPreferences userPreferences = UserPreferences();
     commonViewModel = Provider.of<CommonViewModel>(context,listen: false);
 
-    userId = await userPreferences.getString(key: AppStrings.userIdKey, defaultValue: '97');
+    loginToken = await userPreferences.getString(key: AppStrings.loginTokenKey, defaultValue: '');
+    currentUserId = await UserPreferences().getString(key: AppStrings.userIdKey, defaultValue: '');
+    filledUserName = await UserPreferences().getString(key: AppStrings.userNameKey, defaultValue: '');
 
     await commonViewModel.getLanguage();
+    commonViewModel.setCurrentUserId(currentUserId ?? '');
+    commonViewModel.setCurrentUserName(filledUserName ?? '');
 
-    await commonViewModel.login();
-
-    if(userId != null && userId!.isNotEmpty){
+    if(loginToken != '' && loginToken!.isNotEmpty && commonViewModel.currentUserId != '') {
       commonViewModel.setLoginIn(true);
     } else {
       commonViewModel.setLoginIn(false);

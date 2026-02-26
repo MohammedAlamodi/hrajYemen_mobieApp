@@ -24,14 +24,14 @@ class ProductDisplayViewModel extends ChangeNotifier {
 
 class ProductListViewer extends StatelessWidget {
   final List<ProductModel> products;
-  final String title;
+  final Widget titleWidget;
   final Function()? onScrollEnd;
   final bool isLoadingMore;
 
   const ProductListViewer({
     super.key,
     required this.products,
-    required this.title,
+    required this.titleWidget,
     this.onScrollEnd,
     this.isLoadingMore = false,
   });
@@ -67,12 +67,12 @@ class ProductListViewer extends StatelessWidget {
                       bottom: 8,
                     ),
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      // mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        CustomText(
-                          title: title,
-                          fontWeight: FontWeight.w800,
-                          color: Color(0xFF0F162A),
+                        Expanded(
+                          child: Container(
+                            child: titleWidget,
+                          ),
                         ),
                         InkWell(
                           onTap: () => displayVM.toggleViewMode(),
@@ -154,15 +154,19 @@ class ProductListViewer extends StatelessWidget {
 
                 // 3. مؤشر التحميل في الأسفل (Pagination)
                 if (isLoadingMore)
-                  const SliverToBoxAdapter(
+                   SliverToBoxAdapter(
                     child: Padding(
                       padding: EdgeInsets.all(40.0),
-                      child: Center(child: CustomLoadingWidget()),
+                      child: Center(child: CustomLoadingWidget(
+                        text: 'جاري تحميل المزيد...',
+                        textSize: Theme.of(context).textTheme.bodyMedium!.fontSize! - 4,
+                        size:  Theme.of(context).textTheme.bodyMedium!.fontSize,
+                      )),
                     ),
                   ),
 
                 // مسافة أمان في الأسفل
-                const SliverToBoxAdapter(child: SizedBox(height: 20)),
+                const SliverToBoxAdapter(child: SizedBox(height: 30)),
               ],
             ),
           );

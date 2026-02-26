@@ -76,7 +76,7 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
       separatorBuilder: (c, i) => const SizedBox(height: 16),
       itemBuilder: (context, index) {
         final product = vm.currentAds[index];
-        final bool isSold = product.status == AdStatus.sold.toString();
+        final bool isSold = !product.isActive;
 
         return MyAdCard(
           title: product.title,

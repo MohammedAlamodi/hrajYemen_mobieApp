@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_text.dart';
@@ -75,16 +76,22 @@ class _ProductCardVerticalState extends State<ProductCardVertical> {
                             });
                           },
                           itemBuilder: (context, index) {
-                            return Image.network(
-                              images[index].imageUrl,
+                            String imageUrl = images[index].imageUrl;
+                            return imageUrl.toLowerCase().endsWith('.svg')
+                                ? SvgPicture.network(
+                              imageUrl,
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(child: Icon(Icons.image, color: Colors.grey, size: 30));
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return const Center(child: Icon(Icons.broken_image, color: Colors.grey));
-                              },
+                              placeholderBuilder: (BuildContext context) => const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                                : Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => const Icon(
+                                Icons.image_not_supported_outlined,
+                                color: Colors.grey,
+                              ),
                             );
                           },
                         ),
@@ -107,7 +114,7 @@ class _ProductCardVerticalState extends State<ProductCardVertical> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 color: _currentImageIndex == entry.key
-                                    ? Colors.white
+                                    ? AppColors.current.primary
                                     : Colors.white.withOpacity(0.5),
                               ),
                             );
@@ -172,7 +179,7 @@ class _ProductCardVerticalState extends State<ProductCardVertical> {
                           size: Theme.of(context).textTheme.bodyMedium!.fontSize! - 5,
                         ),
                         CustomText(
-                          title: '${widget.product.city?.name ?? ''} - ${widget.product.region?.name ?? ''}',
+                          title: '${widget.product.cityName ?? ''} - ${widget.product.regionName ?? ''}',
                           color: const Color(0xFF63748A),
                           size: Theme.of(context).textTheme.bodyMedium!.fontSize! - 5,
                         ),

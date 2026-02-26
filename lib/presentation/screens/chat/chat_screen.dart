@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ye_hraj/configurations/user_preferences.dart';
 import 'package:ye_hraj/model/product_model.dart';
 import '../../../model/message_model.dart';
 import '../../../model/seller_model.dart';
@@ -8,15 +9,21 @@ import 'chat_view_model.dart';
 
 class ChatScreen extends StatelessWidget {
   final String currentUserId;
+  final String senderProfileImageUrl;
+  final String senderName;
   final String otherUserId;
   final String otherUserName;
-  final ProductModel? productContext; // المنتج (اختياري)
+  final ProductModel? productContext;
+  final String otherUserImageUrl;
 
   const ChatScreen({
     super.key,
     required this.currentUserId,
+    required this.senderName,
+    required this.senderProfileImageUrl,
     required this.otherUserId,
     required this.otherUserName,
+    required this.otherUserImageUrl, // أضف هذا
     this.productContext,
   });
 
@@ -25,56 +32,82 @@ class ChatScreen extends StatelessWidget {
     return ChangeNotifierProvider(
       create: (_) => ChatViewModel(
         currentUserId: currentUserId,
+        senderName: senderName,
+        otherUserName: otherUserName,
+        otherUserImageUrl: otherUserImageUrl,
+        senderProfileImageUrl: senderProfileImageUrl,
         otherUserId: otherUserId,
         productContext: productContext, // تمرير المنتج للـ VM
       ),
       child: Scaffold(
         backgroundColor: const Color(0xFFF2F4F7),
         appBar: AppBar(
-          title: CustomText(title: otherUserName, size: 16, fontWeight: FontWeight.bold),
+          title: CustomText(
+            title: otherUserName,
+            size: 16,
+            fontWeight: FontWeight.bold,
+          ),
           backgroundColor: Colors.white,
           elevation: 0.5,
           iconTheme: const IconThemeData(color: Colors.black),
         ),
-        body: Consumer<ChatViewModel>(
-          builder: (context, vm, child) {
-            return Column(
-              children: [
-                // 1. قائمة الرسائل
-                Expanded(
-                  child: StreamBuilder(
-                    stream: vm.messagesStream,
-                    builder: (context, AsyncSnapshot snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (!snapshot.hasData || snapshot.data.docs.isEmpty) {
-                        return const Center(child: CustomText(title: 'ابدأ المحادثة الآن', color: Colors.grey));
-                      }
-
-                      return ListView.builder(
-                        reverse: true,
-                        padding: const EdgeInsets.all(16),
-                        itemCount: snapshot.data.docs.length,
-                        itemBuilder: (context, index) {
-                          MessageModel msg = MessageModel.fromMap(
-                              snapshot.data.docs[index].data() as Map<String, dynamic>);
-                          return _MessageBubble(
-                            message: msg,
-                            isMe: msg.senderId == vm.currentUserId,
-                          );
-                        },
-                      );
-                    },
-                  ),
+        body: otherUserId == '0'
+            ? Center(
+                child: CustomText(
+                  title: ' حدث خطأ',
+                  color: Colors.grey,
                 ),
+              )
+            : Consumer<ChatViewModel>(
+                builder: (context, vm, child) {
+                  return Column(
+                    children: [
+                      // 1. قائمة الرسائل
+                      Expanded(
+                        child: StreamBuilder(
+                          stream: vm.messagesStream,
+                          builder: (context, AsyncSnapshot snapshot) {
+                            if (snapshot.connectionState ==
+                                ConnectionState.waiting) {
+                              return const Center(
+                                child: CircularProgressIndicator(),
+                              );
+                            }
+                            if (!snapshot.hasData ||
+                                snapshot.data.docs.isEmpty) {
+                              return const Center(
+                                child: CustomText(
+                                  title: 'ابدأ المحادثة الآن',
+                                  color: Colors.grey,
+                                ),
+                              );
+                            }
 
-                // 2. منطقة الإدخال + كارد المنتج المعلق
-                _InputArea(vm: vm),
-              ],
-            );
-          },
-        ),
+                            return ListView.builder(
+                              reverse: true,
+                              padding: const EdgeInsets.all(16),
+                              itemCount: snapshot.data.docs.length,
+                              itemBuilder: (context, index) {
+                                MessageModel msg = MessageModel.fromMap(
+                                  snapshot.data.docs[index].data()
+                                      as Map<String, dynamic>,
+                                );
+                                return _MessageBubble(
+                                  message: msg,
+                                  isMe: msg.senderId == vm.currentUserId,
+                                );
+                              },
+                            );
+                          },
+                        ),
+                      ),
+
+                      // 2. منطقة الإدخال + كارد المنتج المعلق
+                      _InputArea(vm: vm),
+                    ],
+                  );
+                },
+              ),
       ),
     );
   }
@@ -85,6 +118,7 @@ class ChatScreen extends StatelessWidget {
 // -----------------------------------------------------------------------------
 class _InputArea extends StatelessWidget {
   final ChatViewModel vm;
+
   const _InputArea({required this.vm});
 
   @override
@@ -105,7 +139,9 @@ class _InputArea extends StatelessWidget {
               decoration: BoxDecoration(
                 color: const Color(0xFFF8F9FB),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFF2462EB).withOpacity(0.3)),
+                border: Border.all(
+                  color: const Color(0xFF2462EB).withOpacity(0.3),
+                ),
               ),
               child: Row(
                 children: [
@@ -117,7 +153,8 @@ class _InputArea extends StatelessWidget {
                       width: 50,
                       height: 50,
                       fit: BoxFit.cover,
-                      errorBuilder: (_,__,___) => Container(color: Colors.grey, width: 50),
+                      errorBuilder: (_, __, ___) =>
+                          Container(color: Colors.grey, width: 50),
                     ),
                   ),
                   const SizedBox(width: 10),
@@ -127,7 +164,8 @@ class _InputArea extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         CustomText(
-                          title: 'استفسار بخصوص: ${vm.attachedProductData!['title']}',
+                          title:
+                              'استفسار بخصوص: ${vm.attachedProductData!['title']}',
                           size: 12,
                           fontWeight: FontWeight.bold,
                           color: const Color(0xFF2462EB),
@@ -144,7 +182,7 @@ class _InputArea extends StatelessWidget {
                   IconButton(
                     icon: const Icon(Icons.close, size: 18, color: Colors.grey),
                     onPressed: vm.closeProductPreview,
-                  )
+                  ),
                 ],
               ),
             ),
@@ -155,7 +193,10 @@ class _InputArea extends StatelessWidget {
             child: Row(
               children: [
                 IconButton(
-                  icon: const Icon(Icons.image_outlined, color: Color(0xFF63748A)),
+                  icon: const Icon(
+                    Icons.image_outlined,
+                    color: Color(0xFF63748A),
+                  ),
                   onPressed: vm.sendImage,
                 ),
                 Expanded(
@@ -167,15 +208,23 @@ class _InputArea extends StatelessWidget {
                     ),
                     child: TextField(
                       controller: vm.msgController,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'اكتب رسالتك...',
+                        hintStyle: Theme.of(context).textTheme.bodySmall!.copyWith(
+                          color: const Color(0xFF63748A),
+                          fontSize: Theme.of(context).textTheme.bodySmall!.fontSize! - 4
+
+                        ),
                         border: InputBorder.none,
                       ),
                     ),
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.send_rounded, color: Color(0xFF2462EB)),
+                  icon: const Icon(
+                    Icons.send_rounded,
+                    color: Color(0xFF2462EB),
+                  ),
                   onPressed: () => vm.sendMessage(),
                 ),
               ],
@@ -202,17 +251,28 @@ class _MessageBubble extends StatelessWidget {
       alignment: isMe ? Alignment.centerLeft : Alignment.centerRight,
       child: Container(
         margin: const EdgeInsets.only(bottom: 8),
-        constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.75),
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
         decoration: BoxDecoration(
           color: isMe ? const Color(0xFF2462EB) : Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),
-            bottomLeft: isMe ? const Radius.circular(4) : const Radius.circular(16),
-            bottomRight: isMe ? const Radius.circular(16) : const Radius.circular(4),
+            bottomLeft: isMe
+                ? const Radius.circular(4)
+                : const Radius.circular(16),
+            bottomRight: isMe
+                ? const Radius.circular(16)
+                : const Radius.circular(4),
           ),
           boxShadow: [
-            if (!isMe) BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 2, offset: const Offset(0, 1))
+            if (!isMe)
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
           ],
         ),
         child: Padding(
@@ -234,7 +294,9 @@ class _MessageBubble extends StatelessWidget {
               // 3. النص (يظهر تحت المنتج أو الصورة إذا وجد)
               if (message.text.isNotEmpty)
                 Padding(
-                  padding: EdgeInsets.only(top: (message.type != 'text') ? 8.0 : 0),
+                  padding: EdgeInsets.only(
+                    top: (message.type != 'text') ? 8.0 : 0,
+                  ),
                   child: Text(
                     message.text,
                     style: TextStyle(
@@ -279,7 +341,8 @@ class _MessageBubble extends StatelessWidget {
               width: 40,
               height: 40,
               fit: BoxFit.cover,
-              errorBuilder: (_,__,___) => Container(color: Colors.grey, width: 40),
+              errorBuilder: (_, __, ___) =>
+                  Container(color: Colors.grey, width: 40),
             ),
           ),
           const SizedBox(width: 8),

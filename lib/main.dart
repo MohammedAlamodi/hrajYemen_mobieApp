@@ -13,11 +13,12 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 import 'firebase_options.dart';
+import 'presentation/screens/categories/category_products_view_model.dart';
 import 'presentation/screens/common/auth/login/login_view_model.dart';
 import 'presentation/screens/common/common_view_model.dart';
 import 'presentation/screens/favorites/favorites_view_model.dart';
 import 'presentation/screens/home/main_wrapper_view_model.dart';
-import 'presentation/screens/my_ads/my_ad_view_model.dart';
+import 'presentation/screens/my_products/my_ad_view_model.dart';
 import 'presentation/screens/products/add_products/add_ad_view_model.dart';
 import 'presentation/screens/products/product_details_view_model.dart';
 import 'presentation/screens/products/product_display_view_model.dart';
@@ -53,6 +54,7 @@ final List<SingleChildWidget> _providers = [
   ChangeNotifierProvider(create: (_) => ProfileViewModel()),
   ChangeNotifierProvider(create: (_) => AddAdViewModel()),
   ChangeNotifierProvider(create: (_) => MyAdViewModel()),
+  ChangeNotifierProvider(create: (_) => CategoryProductsViewModel()),
   // ChangeNotifierProvider(create: (ctx) => RegistrationViewModel()),
 ];
 
@@ -88,9 +90,12 @@ final List<SingleChildWidget> _providers = [
 //   }
 // }
 class MyApp extends StatelessWidget {
-  static final navigatorKey = GlobalKey<NavigatorState>();
+  // static final navigatorKey = GlobalKey<NavigatorState>();
 
   const MyApp({super.key});
+
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 
   @override
   Widget build(BuildContext context) {

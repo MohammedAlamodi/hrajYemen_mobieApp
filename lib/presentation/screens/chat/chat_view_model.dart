@@ -12,6 +12,8 @@ class ChatViewModel extends ChangeNotifier {
   final TextEditingController msgController = TextEditingController();
 
   final String currentUserId;
+  final String senderProfileImageUrl;
+  final String senderName;
   final String otherUserId;
   late String chatRoomId;
 
@@ -21,10 +23,16 @@ class ChatViewModel extends ChangeNotifier {
 
   bool get showProductPreview => _showProductPreview;
   Map<String, dynamic>? get attachedProductData => _attachedProductData;
+  final String otherUserName;      // أضف هذا
+  final String otherUserImageUrl;
 
   ChatViewModel({
     required this.currentUserId,
+    required this.senderProfileImageUrl,
+    required this.senderName,
     required this.otherUserId,
+    required this.otherUserName,      // أضف هذا
+    required this.otherUserImageUrl,
     ProductModel? productContext, // نستقبل المنتج هنا
   }) {
     chatRoomId = _repo.getChatRoomId(currentUserId, otherUserId);
@@ -35,7 +43,7 @@ class ChatViewModel extends ChangeNotifier {
         'id': productContext.id,
         'title': productContext.title,
         'price': productContext.price,
-        'image': productContext.images.isNotEmpty ? productContext.images.first : '',
+        'image': productContext.images.isNotEmpty ? productContext.images.first.imageUrl : '',
         'ref': productContext.id // مرجع للإعلان
       };
       _showProductPreview = true; // إظهار الكارد فوق مربع النص
@@ -51,6 +59,8 @@ class ChatViewModel extends ChangeNotifier {
     try {
       final msg = MessageModel(
         senderId: currentUserId,
+        senderName: senderName,
+        senderProfileImageUrl: senderProfileImageUrl,
         receiverId: otherUserId,
         text: text, // قد يكون فارغاً إذا أرسل المنتج فقط
         type: _showProductPreview ? 'product' : 'text', // نوع الرسالة
@@ -58,7 +68,10 @@ class ChatViewModel extends ChangeNotifier {
         timestamp: DateTime.now(),
       );
 
-      await _repo.sendMessage(chatRoomId, msg);
+      await _repo.sendMessage(chatRoomId: chatRoomId,
+        message: msg,
+        receiverName: otherUserName,
+        receiverImageUrl: otherUserImageUrl,);
 
       // تنظيف
       msgController.clear();
@@ -83,12 +96,17 @@ class ChatViewModel extends ChangeNotifier {
         String url = await _repo.uploadImage(File(pickedFile.path));
         final msg = MessageModel(
           senderId: currentUserId,
+          senderName: senderName,
+          senderProfileImageUrl: senderProfileImageUrl,
           receiverId: otherUserId,
           imageUrl: url,
           type: 'image',
           timestamp: DateTime.now(),
         );
-        await _repo.sendMessage(chatRoomId, msg);
+        await _repo.sendMessage(chatRoomId: chatRoomId,
+          message: msg,
+          receiverName: otherUserName,
+          receiverImageUrl: otherUserImageUrl,);
       } catch (e) {
         print("Error uploading image: $e");
       }

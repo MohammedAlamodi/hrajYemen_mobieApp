@@ -14,18 +14,36 @@ class ChatRepository {
   }
 
   // إرسال الرسالة
-  Future<void> sendMessage(String chatRoomId, MessageModel message) async {
+  Future<void> sendMessage({
+    required String chatRoomId,
+    required MessageModel message,
+    required String receiverName,       // إضافة اسم المستلم
+    required String receiverImageUrl,   // إضافة صورة المستلم
+  }) async {
     try {
-      // إضافة الرسالة
+      // 1. إضافة الرسالة داخل الـ Sub-collection
       await _firestore
           .collection('chats')
           .doc(chatRoomId)
           .collection('messages')
           .add(message.toMap());
 
-      // تحديث بيانات الغرفة الخارجية (لأجل قائمة المحادثات)
+      // 2. تحديث بيانات الغرفة الخارجية
       await _firestore.collection('chats').doc(chatRoomId).set({
         'users': [message.senderId, message.receiverId],
+
+        // 🔥 الحل هنا: حفظ بيانات كلا الطرفين باستخدام الـ ID كمفتاح
+        'usersData': {
+          message.senderId: {
+            'name': message.senderName,
+            'image': message.senderProfileImageUrl,
+          },
+          message.receiverId: {
+            'name': receiverName,
+            'image': receiverImageUrl,
+          }
+        },
+
         'lastMessage': _getLastMessageText(message),
         'timestamp': FieldValue.serverTimestamp(),
       }, SetOptions(merge: true));

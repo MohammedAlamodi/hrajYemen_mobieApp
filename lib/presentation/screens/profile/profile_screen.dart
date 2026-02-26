@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ye_hraj/configurations/user_preferences.dart';
 import 'package:ye_hraj/presentation/screens/profile/settings_screen.dart';
 import '../../../configurations/resources/app_colors.dart';
 import '../../../model/user_model.dart';
 import '../../custom_widgets/custom_button.dart';
 import '../../custom_widgets/custom_text.dart';
 import '../common/common_view_model.dart';
-import '../my_ads/my_ad_view_model.dart';
-import '../my_ads/my_ads_screen.dart';
+import '../my_products/my_ad_view_model.dart';
+import '../my_products/my_ads_screen.dart';
 import 'custom_widgets/menu_tile.dart';
 import 'guest_screen.dart';
 import 'profile_view_model.dart';
@@ -90,7 +91,11 @@ class ProfileScreen extends StatelessWidget {
 
   // --- واجهة المستخدم (User View) ---
   Widget _buildUserView(BuildContext context, CommonViewModel vm) {
-    final user = vm.user!;
+    final user = UserModel(
+        id: vm.currentUserId,
+      fullName: vm.currentUserName,
+    );
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -118,7 +123,7 @@ class ProfileScreen extends StatelessWidget {
                   },
                   child: _buildStatCard(
                     context: context,
-                    count: user.activeAdsCount ?? 0,
+                    count: 01,
                     label: 'إعلاناتي الحالية',
                     iconColor: AppColors.current.primary,
                     icon: Icons.open_in_browser, // أيقونة إعلانات
@@ -140,7 +145,7 @@ class ProfileScreen extends StatelessWidget {
                   },
                   child: _buildStatCard(
                     context: context,
-                    count: user.expiredAdsCount ?? 0,
+                    count: 01,
                     iconColor: Colors.blueGrey,
                     label: 'إعلاناتي المنتهية',
                     // استبدلنا المفضلة بهذا
@@ -190,8 +195,8 @@ class ProfileScreen extends StatelessWidget {
                 MenuTile(
                   icon: Icons.logout,
                   title: 'تسجيل الخروج',
-                  onTap: () => vm.logout(context),
-                  isDestructive: false, // يمكن جعلها حمراء لو أردت
+                  onTap: () => UserPreferences().logout(context),
+                  isDestructive: true, // يمكن جعلها حمراء لو أردت
                 ),
               ],
             ),

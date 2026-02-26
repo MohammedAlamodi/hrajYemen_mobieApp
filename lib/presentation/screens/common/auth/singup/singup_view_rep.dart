@@ -30,8 +30,8 @@ class RegistrationViewRepository {
       'Logo': model.logo,
       'Phone': model.phone,
     });
-    await ApiService().getBaseUrlAndToken();
-    return ApiService().dio.post(EndPointsStrings.loginAppEndPoint,
+    await ApiService().getToken();
+    return ApiService().dio.post(EndPointsStrings.loginUserEndPoint,
         data: formData
     ).then((value) async {
       debugPrint("value loginAppSuccess $value");

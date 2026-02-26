@@ -34,7 +34,7 @@ class FavoritesScreen extends StatelessWidget {
                 }
                 // الحالة 2: يوجد منتجات (نستخدم الويدجت الجاهز)
                 return ProductListViewer(
-                  title: 'المنتجات المحفوظة (${favVM.favorites.length})',
+                  titleWidget: CustomText(title: 'المنتجات المحفوظة (${favVM.favorites.length})',),
                   products: favVM.favorites,
                   // لا نحتاج بيجنيشن هنا لأن البيانات لوكل
                   isLoadingMore: false,

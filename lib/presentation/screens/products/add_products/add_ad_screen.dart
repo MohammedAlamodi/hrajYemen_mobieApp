@@ -14,94 +14,102 @@ import 'add_ad_step2_images.dart';
 import 'add_ad_step3_contact.dart';
 import 'add_ad_step4_review.dart';
 
-class AddAdScreen extends StatelessWidget {
-  late CommonViewModel commonViewModel;
-
+class AddAdScreen extends StatefulWidget {
   AddAdScreen({super.key});
+
+  @override
+  State<AddAdScreen> createState() => _AddAdScreenState();
+}
+
+class _AddAdScreenState extends State<AddAdScreen> {
+  late CommonViewModel commonViewModel;
+  late AddAdViewModel addAdViewModel;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _init();
+  }
+
+  Future<void> _init() async {
+    commonViewModel = Provider.of<CommonViewModel>(context, listen: false);
+    addAdViewModel = Provider.of<AddAdViewModel>(context, listen: false);
+    await commonViewModel.initData(context: context);
+  }
 
   @override
   Widget build(BuildContext context) {
     commonViewModel = Provider.of<CommonViewModel>(context);
+    addAdViewModel = Provider.of<AddAdViewModel>(context);
 
-    return ChangeNotifierProvider(
-      create: (_) => AddAdViewModel(),
-      child:!commonViewModel.isLoggedIn? GuestScreen() : Scaffold(
-        backgroundColor: AppColors.current.appBackground,
-        body: SafeArea(
-          child: Consumer<AddAdViewModel>(
-            builder: (context, vm, child) {
-              return Column(
-                children: [
-                  // 1. الهيدر المتغير
-                  _buildHeader(context, vm),
-          
-                  // 2. المحتوى المتغير حسب الخطوة
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(16),
-                      child: _buildCurrentStep(vm),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ),
-        // 3. زر التنقل السفلي
-        bottomNavigationBar: Consumer<AddAdViewModel>(
-          builder: (context, vm, child) => Container(
-            padding: const EdgeInsets.all(16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(top: BorderSide(color: Color(0xFFE1E8EF))),
+    return !commonViewModel.isLoggedIn
+        ? GuestScreen()
+        : Scaffold(
+            backgroundColor: AppColors.current.appBackground,
+            body: SafeArea(
+              child: Consumer<AddAdViewModel>(
+                builder: (context, vm, child) {
+                  return Column(
+                    children: [
+                      // 1. الهيدر المتغير
+                      _buildHeader(context, vm),
+
+                      // 2. المحتوى المتغير حسب الخطوة
+                      Expanded(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(16),
+                          child: _buildCurrentStep(vm),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
             ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomButton(
-                  onTap: (vm.currentStep == 4 && !vm.isAgreeToPostAd)
-                      ? () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: CustomText(
-                                title:
-                                    'يرجى الموافقة على اتفاقيه نشر الإعلان قبل المتابعة.',
-                                color: Colors.white,
-                                size:
-                                    Theme.of(
-                                      context,
-                                    ).textTheme.bodySmall!.fontSize! -
-                                    2,
-                              ),
-                            ),
-                          );
-                        }
-                      : () => vm.nextStep(context),
-                  text: vm.currentStep == 4 ? 'نشر الإعلان' : 'التالي',
-                  btnColor: (vm.currentStep == 4 && !vm.isAgreeToPostAd)
-                      ? Colors.grey
-                      : const Color(0xFF2462EB),
-                  btnTextColor: Colors.white,
+            // 3. زر التنقل السفلي
+            bottomNavigationBar: Consumer<AddAdViewModel>(
+              builder: (context, vm, child) => Container(
+                padding: const EdgeInsets.all(16),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(top: BorderSide(color: Color(0xFFE1E8EF))),
                 ),
-                // if (vm.currentStep == 2) ...[
-                //   const SizedBox(height: 12),
-                //   InkWell(
-                //     onTap: () {
-                //       /* حفظ مسودة */
-                //     },
-                //     child: const CustomText(
-                //       title: 'حفظ كمسودة',
-                //       color: Color(0xFF63748A),
-                //       fontWeight: FontWeight.bold,
-                //     ),
-                //   ),
-                // ],
-              ],
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CustomButton(
+                      onTap: (vm.currentStep == 4 && !vm.isAgreeToPostAd)
+                          ? () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: CustomText(
+                                    title:
+                                        'يرجى الموافقة على اتفاقيه نشر الإعلان قبل المتابعة.',
+                                    color: Colors.white,
+                                    size:
+                                        Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall!.fontSize! -
+                                        2,
+                                  ),
+                                ),
+                              );
+                            }
+                          : () => vm.nextStep(context),
+                      text: vm.currentStep == 4 ? 'نشر الإعلان' : 'التالي',
+
+                      btnColor: (vm.currentStep == 4 && !vm.isAgreeToPostAd)
+                          ? Colors.grey
+                          : const Color(0xFF2462EB),
+                      loading: vm.isLoadingPostAd,
+                      btnTextColor: Colors.white,
+                    ),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
-      ),
-    );
+          );
   }
 
   Widget _buildCurrentStep(AddAdViewModel vm) {

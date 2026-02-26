@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_text.dart'; // تأكد من المسار
+import '../../../../configurations/data/end_points_manager.dart';
 import '../../../../model/product_image_model.dart';
 import '../../../../model/seller_model.dart';
 import '../product_details_view_model.dart';
@@ -30,7 +31,7 @@ class ProductCommentsSection extends StatelessWidget {
             fontWeight: FontWeight.w800,
             color: Color(0xFF0F162A),
           ),
-          const SizedBox(height: 16),
+          // const SizedBox(height: 16),
 
           // قائمة التعليقات الموجودة
           if (comments.isEmpty)
@@ -84,7 +85,7 @@ class _CommentItem extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               image: DecorationImage(
-                image: NetworkImage(comment.user.profileImageUrl ?? 'https://placehold.co/100x100'), // صورة افتراضية إذا لم توجد
+                image: NetworkImage(comment.user?.profileImageUrl ?? EndPointsStrings.emptyImageUrl), // صورة افتراضية إذا لم توجد
                 fit: BoxFit.cover,
               ),
             ),
@@ -101,7 +102,7 @@ class _CommentItem extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     CustomText(
-                      title: comment.user.fullName,
+                      title: comment.user?.fullName ?? 'مستخدم مجهول',
                       size: Theme.of(context).textTheme.bodySmall!.fontSize! - 2,
                       fontWeight: FontWeight.w800,
                       color: AppColors.current.blackGrey,

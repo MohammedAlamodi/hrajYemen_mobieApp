@@ -239,6 +239,10 @@ class S implements WidgetsLocalizations {
   @override
   // TODO: implement shareButtonLabel
   String get shareButtonLabel => throw UnimplementedError();
+
+  String? get error => 'خطأ';
+
+  String? get yourAccessDenied => 'انتهت الجلسة الخاصه بك، الرجاء تسجيل الدخول';
 }
 
 // Arabic translation

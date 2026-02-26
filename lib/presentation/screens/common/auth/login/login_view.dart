@@ -43,16 +43,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Future<void> _init() async {
     loginViewModel = Provider.of<LoginViewModel>(context, listen: false);
-    await ApiService().getBaseUrlAndToken();
+    await ApiService().getToken();
     userName = TextEditingController(text: loginViewModel.userName);
     password = TextEditingController(text: loginViewModel.password);
-
-    // _selectedUrl = userPreferences.prefs.getString(AppStrings.baseUrl);
-    // _selectedDatabase = userPreferences.prefs.getString(AppStrings.dbName);
-    // if (_selectedUrl != null) {
-    //   loginViewModel.odooURLOnChanged(_selectedUrl!);
-    //   loginViewModel.dbNameOnChanged(_selectedDatabase!);
-    // }
   }
 
   @override
@@ -61,7 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      resizeToAvoidBottomInset: false,
+      // resizeToAvoidBottomInset: false,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).requestFocus(FocusNode()),
         child: Padding(
@@ -73,170 +66,144 @@ class _LoginScreenState extends State<LoginScreen> {
                 height: 60,
               ),
               LanguageIcon(),
+              SizedBox(height: 30,),
               Expanded(
-                child: Form(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            ImageAssets.logo2,
-                            width: widthOfScreen(context) * 0.3,
-                            fit: BoxFit.fitWidth,
+                child: ListView(
+                  // mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset(
+                          ImageAssets.logo2,
+                          width: widthOfScreen(context) * 0.3,
+                          fit: BoxFit.fitWidth,
+                        ),
+                      ],
+                    ),
+
+                    SizedBox(height: 20,),
+
+                    CustomText(
+                      title: S.of(context)!.login,
+                      fontWeight: FontWeight.bold,
+                      size: Theme.of(context).textTheme.bodyLarge!.fontSize! +
+                          3,
+                    ),
+                    SizedBox(
+                      height: 15,
+                    ),
+                    CustomText(
+                      title: S.of(context)!.loginToYourAccounts,
+                      color: Colors.black45,
+                      size: Theme.of(context).textTheme.bodySmall!.fontSize! -
+                          1,
+                    ),
+                    SizedBox(
+                      height: 10,
+                    ),
+                    SizedBox(
+                      height: 25,
+                    ),
+
+                    CustomTextField(
+                      textAlign: TextAlign.start,
+                      controller: userName,
+                      title: '${S.of(context)!.userName} *',
+                      validator: (value) => null,
+                      onChange: (value) =>
+                          loginViewModel.emailOnChanged(value.trim()),
+                      type: TextInputType.text,
+                      prefixIcon: CusSvgIcons(
+                        iconAssetString: IconAssets.email,
+                      ),
+                      hint:
+                          '${S.of(context)!.enter} ${S.of(context)!.yourEmail}',
+                      errorText: loginViewModel.errorEmail,
+                    ),
+
+                    const SizedBox(height: 15),
+
+                    CustomTextField(
+                      textAlign: TextAlign.start,
+                      controller: password,
+                      title: '${S.of(context)!.password} *',
+                      onChange: (value) =>
+                          loginViewModel.passwordOnChanged(value.trim()),
+                      validator: (value) => null,
+                      type: TextInputType.text,
+                      obscureText: loginViewModel.obscureText,
+                      hint:
+                          '${S.of(context)!.enter} ${S.of(context)!.password}',
+                      errorText: loginViewModel.errorPass,
+                      prefixIcon: CusSvgIcons(iconAssetString:
+                      IconAssets.lock,
+                      ),
+                      suffixIcon: GestureDetector(
+                          onTap: () => loginViewModel
+                              .changeObscureText(!loginViewModel.obscureText),
+                          child: CusSvgIcons(iconAssetString:
+                          loginViewModel.obscureText
+                                ? IconAssets.hidePassword
+                                : IconAssets.viewPassword,
+                            color: loginViewModel.password.isNotEmpty
+                                ? Colors.black
+                                : !loginViewModel.obscureText
+                                    ? Colors.black
+                                    : AppColors.current.grey,
+                            size: 25,
                           ),
-                        ],
-                      ),
+                      )
+                    ),
 
-                      SizedBox(height: 20,),
+                    const SizedBox(height: 15),
 
-                      CustomText(
-                        title: S.of(context)!.login,
-                        fontWeight: FontWeight.bold,
-                        size: Theme.of(context).textTheme.bodyLarge!.fontSize! +
-                            3,
-                      ),
-                      SizedBox(
-                        height: 15,
-                      ),
-                      CustomText(
-                        title: S.of(context)!.loginToYourAccounts,
-                        color: Colors.black45,
-                        size: Theme.of(context).textTheme.bodySmall!.fontSize! -
-                            1,
-                      ),
-                      SizedBox(
-                        height: 10,
-                      ),
-                      SizedBox(
-                        height: 25,
-                      ),
+                    CustomButton(
+                      text: S.of(context)!.login,
+                      onTap: () {
+                        FocusScope.of(context).requestFocus(FocusNode());
+                        try {
+                          loginViewModel.onLoginClick(context);
+                        } catch (e) {
+                          debugPrint('************** error in login ${e.toString()}');
+                          // OverlayHelper.showErrorToast(context, e.toString().replaceAll('Exception: ', ''));
+                        }
+                      },
+                      loading: loginViewModel.isLoading,
+                    ),
 
-                      CustomTextField(
-                        textAlign: TextAlign.start,
-                        controller: userName,
-                        title: '${S.of(context)!.userName} *',
-                        validator: (value) => null,
-                        onChange: (value) =>
-                            loginViewModel.emailOnChanged(value.trim()),
-                        type: TextInputType.text,
-                        prefixIcon: CusSvgIcons(
-                          iconAssetString: IconAssets.email,
+                    const SizedBox(height: 10),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CustomText(
+                          title: S.of(context)!.youWantToHaveAccount,
+                          size:
+                              Theme.of(context).textTheme.bodySmall!.fontSize,
                         ),
-                        hint:
-                            '${S.of(context)!.enter} ${S.of(context)!.yourEmail}',
-                        errorText: loginViewModel.errorEmail,
-                      ),
 
-                      const SizedBox(height: 15),
-
-                      CustomTextField(
-                        textAlign: TextAlign.start,
-                        controller: password,
-                        title: '${S.of(context)!.password} *',
-                        onChange: (value) =>
-                            loginViewModel.passwordOnChanged(value.trim()),
-                        validator: (value) => null,
-                        type: TextInputType.text,
-                        obscureText: loginViewModel.obscureText,
-                        hint:
-                            '${S.of(context)!.enter} ${S.of(context)!.password}',
-                        errorText: loginViewModel.errorPass,
-                        prefixIcon: CusSvgIcons(iconAssetString:
-                        IconAssets.lock,
-                        ),
-                        suffixIcon: GestureDetector(
-                            onTap: () => loginViewModel
-                                .changeObscureText(!loginViewModel.obscureText),
-                            child: CusSvgIcons(iconAssetString:
-                            loginViewModel.obscureText
-                                  ? IconAssets.hidePassword
-                                  : IconAssets.viewPassword,
-                              color: loginViewModel.password.isNotEmpty
-                                  ? Colors.black
-                                  : !loginViewModel.obscureText
-                                      ? Colors.black
-                                      : AppColors.current.grey,
-                              size: 25,
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.of(context)
+                                  .pushNamed(RegistrationScreen.routeName);
+                            },
+                            child: CustomText(
+                              title: S.of(context)!.createAnAccount,
+                              size: Theme.of(context)
+                                  .textTheme
+                                  .bodySmall!
+                                  .fontSize,
+                              // fontWeight: FontWeight.bold,
+                              color: AppColors.current.primary,
                             ),
+                          ),
                         )
-                      ),
-
-                      const SizedBox(height: 15),
-
-                      // Row(
-                      //   children: [
-                      //     Padding(
-                      //       padding: const EdgeInsets.only(top: 8,bottom: 20),
-                      //       child: GestureDetector(
-                      //         onTap: () {
-                      //           Navigator.of(context)
-                      //               .pushNamed(ForgetPasswordEmailView.routeName);
-                      //         },
-                      //         child: CustomText(
-                      //           title:
-                      //               '${S.of(context)!.hal} ${S.of(context)!.forgetPassword} ؟',
-                      //           size: Theme.of(context)
-                      //               .textTheme
-                      //               .bodySmall!
-                      //               .fontSize,
-                      //           // fontWeight: FontWeight.bold,
-                      //           color: AppColors.current.primary,
-                      //         ),
-                      //       ),
-                      //     ),
-                      //   ],
-                      // ),
-
-                      CustomButton(
-                        text: S.of(context)!.login,
-                        onTap: () {
-                          FocusScope.of(context).requestFocus(FocusNode());
-                          try {
-                            loginViewModel.onLoginClick(context);
-                          } catch (e) {
-                            debugPrint('************** error in login ${e.toString()}');
-                            // OverlayHelper.showErrorDialog(
-                            //     context, e.toString());
-                          }
-                        },
-                        loading: loginViewModel.isLoading,
-                      ),
-
-                      const SizedBox(height: 10),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CustomText(
-                            title: S.of(context)!.youWantToHaveAccount,
-                            size:
-                                Theme.of(context).textTheme.bodySmall!.fontSize,
-                          ),
-
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.of(context)
-                                    .pushNamed(RegistrationScreen.routeName);
-                              },
-                              child: CustomText(
-                                title: S.of(context)!.createAnAccount,
-                                size: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall!
-                                    .fontSize,
-                                // fontWeight: FontWeight.bold,
-                                color: AppColors.current.primary,
-                              ),
-                            ),
-                          )
-                        ],
-                      ),
-                      const SizedBox(height: 25),
-                    ],
-                  ),
+                      ],
+                    ),
+                    const SizedBox(height: 25),
+                  ],
                 ),
               ),
             ],

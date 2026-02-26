@@ -12,6 +12,7 @@ class HomeViewModel extends ChangeNotifier {
   bool _isLoading = false;      // تحميل أولي
   bool _isLoadingMore = false;  // تحميل المزيد (Pagination)
   int _currentPage = 1;
+  final int _pageSize = 10;
   bool _hasMoreData = true;     // هل يوجد بيانات متبقية؟
 
   // Getters
@@ -19,6 +20,7 @@ class HomeViewModel extends ChangeNotifier {
   List<CategoryModel> get categories => _categories;
   bool get isLoading => _isLoading;
   bool get isLoadingMore => _isLoadingMore;
+
 
   Future<void> getInitialData() async {
     _isLoading = true;
@@ -29,16 +31,32 @@ class HomeViewModel extends ChangeNotifier {
 
       // جلب المنتجات والفئات بالتوازي (لتحسين السرعة)
       final results = await Future.wait([
-        _repo.fetchProducts(page: _currentPage),
+        _repo.fetchProducts(page: _currentPage, limit: _pageSize),
         _repo.fetchCategories(),
       ]);
 
       _products = results[0] as List<ProductModel>;
       _categories = results[1] as List<CategoryModel>;
 
-      _hasMoreData = _products.length >= 20;
+      _hasMoreData = _products.length >= _pageSize;
     } catch (e) {
-      print("Error: $e");
+      debugPrint("خطأ في معالجة المنتجات: $e");
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> refreshProducts() async {
+    _isLoading = true;
+    notifyListeners();
+
+    try {
+      _currentPage = 1;
+      _products = await _repo.fetchProducts(page: _currentPage, limit: _pageSize);
+      _hasMoreData = _products.length >= _pageSize;
+    } catch (e) {
+      debugPrint("خطأ في تحديث المنتجات: $e");
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -54,7 +72,7 @@ class HomeViewModel extends ChangeNotifier {
 
     try {
       _currentPage++;
-      final newProducts = await _repo.fetchProducts(page: _currentPage);
+      final newProducts = await _repo.fetchProducts(page: _currentPage, limit: _pageSize);
 
       if (newProducts.isEmpty) {
         _hasMoreData = false;

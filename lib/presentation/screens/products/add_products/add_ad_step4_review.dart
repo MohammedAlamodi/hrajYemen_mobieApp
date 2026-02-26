@@ -79,7 +79,7 @@ class AddAdStep4Review extends StatelessWidget {
                           color: const Color(0xFF2462EB),
                         ),
                         CustomText(
-                          title: vm.selectedCity ?? '',
+                          title: vm.selectedCity?.name ?? '',
                           size:
                               Theme.of(
                                 context,
@@ -114,7 +114,7 @@ class AddAdStep4Review extends StatelessWidget {
         _buildReviewRow(
           context: context,
           title: 'الموقع',
-          value: vm.selectedCity ?? '-',
+          value: vm.selectedCity?.name ?? '-',
           icon: Icons.location_on_outlined,
         ),
         _buildReviewRow(

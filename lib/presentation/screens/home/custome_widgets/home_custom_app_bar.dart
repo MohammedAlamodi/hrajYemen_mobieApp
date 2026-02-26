@@ -23,7 +23,7 @@ class HomeCustomAppBar extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
              CustomText(
-                title: commonViewModel.isLoggedIn ? 'مرحبا بك ${commonViewModel.user!.fullName}' : '  مرحبا بك كزائر',
+                title: commonViewModel.isLoggedIn ? 'مرحبا بك ${commonViewModel.currentUserName}' : '  مرحبا بك نورتنا',
                 fontWeight: FontWeight.bold,
              ),
 
