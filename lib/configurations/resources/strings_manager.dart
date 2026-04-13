@@ -6,6 +6,7 @@ class AppStrings {
   static const refreshToken = "refreshToken";
   static const userIdKey = "id";
   static const userEmailKey = "email";
+  static const userProfileImageUrlKey = "userProfileImageUrl";
   static const userNameKey = "name";
   static const userTypeKey = "userTypeKey";
   static const cookie = "cookie";

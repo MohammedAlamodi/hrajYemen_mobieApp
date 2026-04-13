@@ -99,7 +99,8 @@ class CustomButton extends StatelessWidget {
                                       .textTheme
                                       .bodyMedium!
                                       .fontSize,
-                              fontWeight: btnTextFontWeight ?? FontWeight.normal),
+                              fontWeight: btnTextFontWeight ?? FontWeight.normal
+                      ),
                     ],
                   ),
               )
@@ -137,7 +138,7 @@ class CustomButton extends StatelessWidget {
                   : Center(
                       child: loading
                           ? CustomLoadingWidget(
-                        size: 25,
+                        size: Theme.of(context).textTheme.bodyMedium!.fontSize! - 5,
                       )
                           : Padding(
                               padding: const EdgeInsets.all(6.0),

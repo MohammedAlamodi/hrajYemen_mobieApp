@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:ye_hraj/presentation/screens/home/home_view_model.dart';
 import 'configurations/helpers_functions.dart';
 import 'configurations/localization/i18n.dart';
 import 'configurations/user_preferences.dart';
@@ -13,16 +12,18 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 
 import 'firebase_options.dart';
-import 'presentation/screens/categories/category_products_view_model.dart';
 import 'presentation/screens/common/auth/login/login_view_model.dart';
+import 'presentation/screens/common/auth/register/register_view_model.dart';
 import 'presentation/screens/common/common_view_model.dart';
-import 'presentation/screens/favorites/favorites_view_model.dart';
-import 'presentation/screens/home/main_wrapper_view_model.dart';
-import 'presentation/screens/my_products/my_ad_view_model.dart';
-import 'presentation/screens/products/add_products/add_ad_view_model.dart';
-import 'presentation/screens/products/product_details_view_model.dart';
-import 'presentation/screens/products/product_display_view_model.dart';
-import 'presentation/screens/profile/profile_view_model.dart';
+import 'presentation/screens/customer/categories/category_products_view_model.dart';
+import 'presentation/screens/customer/favorites/favorites_view_model.dart';
+import 'presentation/screens/customer/home/custome_widgets/Product_list_viewer.dart';
+import 'presentation/screens/customer/home/home_view_model.dart';
+import 'presentation/screens/customer/home/main_wrapper_view_model.dart';
+import 'presentation/screens/customer/my_products/my_ad_view_model.dart';
+import 'presentation/screens/customer/products/add_products/add_ad_view_model.dart';
+import 'presentation/screens/customer/products/product_details_view_model.dart';
+import 'presentation/screens/customer/profile/profile_view_model.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -54,6 +55,7 @@ final List<SingleChildWidget> _providers = [
   ChangeNotifierProvider(create: (_) => ProfileViewModel()),
   ChangeNotifierProvider(create: (_) => AddAdViewModel()),
   ChangeNotifierProvider(create: (_) => MyAdViewModel()),
+  ChangeNotifierProvider(create: (_) => RegisterViewModel()),
   ChangeNotifierProvider(create: (_) => CategoryProductsViewModel()),
   // ChangeNotifierProvider(create: (ctx) => RegistrationViewModel()),
 ];

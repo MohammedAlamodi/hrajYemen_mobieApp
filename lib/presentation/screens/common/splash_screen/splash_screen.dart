@@ -6,9 +6,7 @@ import '../../../../configurations/helpers_functions.dart';
 import '../../../../configurations/user_preferences.dart';
 import '../../../../configurations/resources/assets_manager.dart';
 import '../../../../configurations/resources/strings_manager.dart';
-import '../../home/home_screen.dart';
-import '../../home/main_wrapper_screen.dart';
-import '../auth/login/login_view.dart';
+import '../../customer/home/main_wrapper_screen.dart';
 import '../common_view_model.dart';
 
 
@@ -95,7 +93,7 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Center(
               child: Image.asset(
                 ImageAssets.logo2,
-                width: widthOfScreen(context) * 0.6,
+                width: widthOfScreen(context) * 0.8,
                 fit: BoxFit.fitWidth,
               ),
             ),

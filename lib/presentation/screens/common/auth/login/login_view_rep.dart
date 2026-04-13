@@ -7,7 +7,9 @@ import 'package:flutter/foundation.dart';
 
 import '../../../../../configurations/resources/strings_manager.dart';
 import '../../../../../configurations/user_preferences.dart';
+import '../../../../../main.dart';
 import '../../../../../model/login_model.dart';
+import '../../../../custom_widgets/custom_text.dart';
 
 class LoginViewRepository {
   LoginViewRepository._internal();
@@ -20,6 +22,8 @@ class LoginViewRepository {
 
   Future<LoginResponseModel> login(String email, String password) async {
     try {
+      // final context = MyApp.navigatorKey.currentContext;
+
       final response = await ApiService().dio.post(
         EndPointsStrings.loginUserEndPoint, // استبدله بـ EndPointsStrings.loginEndPoint
         data: {
@@ -36,6 +40,25 @@ class LoginViewRepository {
       if (result['success'] == true && result['data'] != null) {
         return LoginResponseModel.fromJson(result);
       } else {
+        if(response.statusCode == 400){
+          debugPrint("خطأ في التسجيل: ${response.data}");
+          if(response.data != null && response.data is Map<String, dynamic>){
+            if(response.data.containsKey('message')){
+              if(MyApp.navigatorKey.currentContext == null) return throw Exception();
+
+              ScaffoldMessenger.of(MyApp.navigatorKey.currentContext!).showSnackBar(
+                SnackBar(
+                  content: CustomText(
+                    size: Theme.of(MyApp.navigatorKey.currentContext!).textTheme.bodySmall!.fontSize! - 2,
+                    title: response.data['message'],
+                  ),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              debugPrint("تفاصيل الأخطاء: ${response.data['message']}");
+            }
+          }
+        }
         // إذا كان success: false، نرمي رسالة الخطأ القادمة من السيرفر
         throw Exception(result['message'] ?? 'فشل تسجيل الدخول. يرجى المحاولة لاحقاً.');
       }

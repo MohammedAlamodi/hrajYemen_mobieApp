@@ -13,7 +13,6 @@ import 'package:provider/provider.dart';
 import '../../../../custom_widgets/icon_with_bag.dart';
 import '../../../../custom_widgets/laguage_icon.dart';
 import '../login/login_view_model.dart';
-import '../singup/singup_view.dart';
 import 'forget_password_phone_view.dart';
 import 'otp_for_email.dart';
 

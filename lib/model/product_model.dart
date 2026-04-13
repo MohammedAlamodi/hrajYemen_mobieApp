@@ -14,6 +14,7 @@ class ProductModel {
   final String? categoryName;
   final String? subCategoryName;
   final String? cityName;
+  final String? priceCurrency;
   final String? regionName;
   final String? userName;
   // final String userId;
@@ -22,10 +23,12 @@ class ProductModel {
   // final UserModel? user;
 
   final bool isActive;
+  final bool isBlocked;
   final bool isFavorite;
   final String? mainImageUrl;
   final int viewsCount;
   final DateTime createdAt;
+  final DateTime updateAt;
 
   final List<ProductImageModel> images;
 
@@ -43,15 +46,18 @@ class ProductModel {
     this.cityName,
     this.regionName,
     this.userName,
+    this.priceCurrency,
     this.user,
     this.userProfileImageUrl,
     // required this.userId,
 
+    required this.isBlocked,
     required this.isActive,
     required this.isFavorite,
     this.mainImageUrl,
     required this.viewsCount,
     required this.createdAt,
+    required this.updateAt,
 
     this.images = const [],
     this.comments = const [],
@@ -84,6 +90,7 @@ class ProductModel {
       id: json['id'] ?? 0,
       // userId: json['userId'] ?? '',
       title: json['title'] ?? '',
+      priceCurrency: json['priceCurrency'] ?? 'RY',
       description: json['description'],
       price: (json['price'] as num?)?.toDouble(),
       condition: json['condition'],
@@ -96,12 +103,17 @@ class ProductModel {
       user: json['user'] != null ? UserModel.fromJson(json['user']) : null,
 
       isActive: json['isActive'] ?? true,
+      isBlocked: json['isBlocked'] ?? false,
       isFavorite: json['isFavorite'] ?? false,
       mainImageUrl: mainImage,
       viewsCount: json['viewsCount'] ?? 0,
 
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'])
+          : DateTime.now(),
+
+      updateAt: json['updateAt'] != null
+          ? DateTime.parse(json['updateAt'])
           : DateTime.now(),
       images: parsedImages,
       comments:
@@ -122,12 +134,14 @@ class ProductModel {
       'condition': condition,
 
       'categoryName': categoryName,
+      'priceCurrency': priceCurrency,
       'subCategoryName': subCategoryName,
       'cityName': cityName,
       'regionName': regionName,
       'userName': userName,
 
       'isActive': isActive,
+      'isBlocked': isBlocked,
       'isFavorite': isFavorite,
 
       // إزالة الدومين عند الإرسال للسيرفر إذا كان السيرفر يحفظ المسار فقط (مثل /images/...)

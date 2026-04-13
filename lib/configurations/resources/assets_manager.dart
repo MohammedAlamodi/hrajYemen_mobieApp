@@ -30,7 +30,7 @@ class ImageAssets {
 
   static const String splash = '$imagesPath/splash.jpg';
   // static const String splash = 'assets/images/splash.jpg';
-  static const String logo = 'assets/images/logo.png';
+  static const String logo = '$imagesPath/appIcon.png';
   // static const String logo = '$imagesPath/app_logo.png';
-  static const String logo2 = '$imagesPath/app_logo2.png';
+  static const String logo2 = '$imagesPath/appIcon2.jpeg';
 }

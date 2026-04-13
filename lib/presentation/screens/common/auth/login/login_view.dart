@@ -14,7 +14,7 @@ import '../../../../custom_widgets/dialog/overlay_helper.dart';
 import '../../../../custom_widgets/laguage_icon.dart';
 import '../../../../custom_widgets/title_error_widget.dart';
 import '../forget_password_email/forget_password_email_view.dart';
-import '../singup/singup_view.dart';
+import '../register/register_view.dart';
 import 'login_view_model.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -63,10 +63,10 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               SizedBox(
-                height: 60,
+                height: 40,
               ),
               LanguageIcon(),
-              SizedBox(height: 30,),
+              SizedBox(height: 20,),
               Expanded(
                 child: ListView(
                   // mainAxisAlignment: MainAxisAlignment.center,
@@ -76,7 +76,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       children: [
                         Image.asset(
                           ImageAssets.logo2,
-                          width: widthOfScreen(context) * 0.3,
+                          width: widthOfScreen(context) * 0.5,
                           fit: BoxFit.fitWidth,
                         ),
                       ],
@@ -187,7 +187,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           child: GestureDetector(
                             onTap: () {
                               Navigator.of(context)
-                                  .pushNamed(RegistrationScreen.routeName);
+                                  .pushNamed(RegisterScreen.routeName);
                             },
                             child: CustomText(
                               title: S.of(context)!.createAnAccount,

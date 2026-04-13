@@ -7,9 +7,7 @@ import 'package:dio/dio.dart';
 
 import '../../../model/category_model.dart';
 import '../../../model/region_model.dart';
-import '../../../model/user_model.dart';
-import '../../custom_widgets/dialog/overlay_helper.dart';
-import '../home/home_repo.dart';
+import '../customer/home/home_repo.dart';
 import 'common_rep.dart';
 
 class CommonViewModel extends ChangeNotifier {

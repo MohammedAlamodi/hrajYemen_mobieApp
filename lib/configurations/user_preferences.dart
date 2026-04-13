@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../presentation/screens/admin_web/login/web_admin_login_screen.dart';
 import '../presentation/screens/common/auth/login/login_view.dart';
 import 'encryption_decryption.dart';
 import 'resources/strings_manager.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class UserPreferences {
   static final UserPreferences _instance = UserPreferences._const();
+
   factory UserPreferences() {
     return _instance;
   }
@@ -22,8 +25,10 @@ class UserPreferences {
     debugPrint("✅ init SharedPreferences");
   }
 
-  Future<void> saveEncryptedString(
-      {required String key, required String value}) async {
+  Future<void> saveEncryptedString({
+    required String key,
+    required String value,
+  }) async {
     final encryptedValue = await MyencryptDecryption.encryptAES(value);
     prefs!.setString(key, encryptedValue.base64);
   }
@@ -40,17 +45,18 @@ class UserPreferences {
 
   // Save an encrypted boolean value
   Future<void> saveBool({required String key, required bool value}) async {
-    if( prefs == null){
+    if (prefs == null) {
       await init();
     }
-    final encryptedValue =
-    await MyencryptDecryption.encryptAES(value.toString());
+    final encryptedValue = await MyencryptDecryption.encryptAES(
+      value.toString(),
+    );
     prefs!.setString(key, encryptedValue.base64);
   }
 
   // Get and decrypt a boolean value
   Future<bool> getBool({required String key, bool defaultValue = false}) async {
-    if( prefs == null){
+    if (prefs == null) {
       await init();
     }
 
@@ -61,7 +67,8 @@ class UserPreferences {
       debugPrint("encrypted $encrypted'}");
       final decryptedString = await MyencryptDecryption.decryptAES(encrypted);
       debugPrint(
-          "decryptedString $decryptedString, ${decryptedString == 'true'}");
+        "decryptedString $decryptedString, ${decryptedString == 'true'}",
+      );
       return decryptedString == 'true';
     }
     return defaultValue;
@@ -71,26 +78,39 @@ class UserPreferences {
     prefs!.setString(key, value);
   }
 
-  Future<String> getString(
-      {required String key, required String defaultValue}) async {
-    if(prefs == null){
+  Future<String> getString({
+    required String key,
+    required String defaultValue,
+  }) async {
+    if (prefs == null) {
       await init();
     }
     return prefs!.getString(key) ?? defaultValue;
   }
 
-  String getStringWhitOutInit(
-      {required String key, required String defaultValue}) {
-
+  String getStringWhitOutInit({
+    required String key,
+    required String defaultValue,
+  }) {
     return prefs!.getString(key) ?? defaultValue;
   }
 
   Future<void> logout(BuildContext context) async {
     await clearLogout(context);
-    // String url = await UserPreferences().prefs!.getString(AppStrings.baseUrl) ?? '';
-    Navigator.pushNamedAndRemoveUntil(
-        context, LoginScreen.routeName, (route) => false
-    );
+
+    kIsWeb
+        ? Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const WebAdminLoginScreen(),
+            ),
+            (route) => false,
+          )
+        : Navigator.pushNamedAndRemoveUntil(
+            context,
+            LoginScreen.routeName,
+            (route) => false,
+          );
   }
 
   Future<void> clearLogout(BuildContext context) async {
@@ -101,9 +121,5 @@ class UserPreferences {
     prefs!.remove(AppStrings.userEmailKey);
     prefs!.remove(AppStrings.refreshToken);
     prefs!.remove(AppStrings.loginTokenKey);
-
-    // Provider.of<AddSellOrderViewModel>(context, listen: false).reset();
-    //
-    // Provider.of<AddProductsViewModel>(context, listen: false).reset();
   }
 }

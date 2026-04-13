@@ -16,6 +16,7 @@ class CommonViewRepository {
     return _singleton;
   }
 
+  // --- دوال إدارة المدن (Cities) ---
   Future<List<CitiesModel>> fetchCities() async {
     await ApiService().getToken();
 
@@ -56,6 +57,31 @@ class CommonViewRepository {
     }
   }
 
+  Future<bool> createCity(String name) async {
+    try {
+      await ApiService().getToken();
+      final response = await ApiService().dio.post(EndPointsStrings.getCitiesEndPoint, data: {'name': name});
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) { return false; }
+  }
+
+  Future<bool> updateCity(int id, String name) async {
+    try {
+      await ApiService().getToken();
+      final response = await ApiService().dio.put('${EndPointsStrings.getCitiesEndPoint}/$id', data: {'name': name});
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) { return false; }
+  }
+
+  Future<bool> deleteCity(int id) async {
+    try {
+      await ApiService().getToken();
+      final response = await ApiService().dio.delete('${EndPointsStrings.getCitiesEndPoint}/$id');
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) { return false; }
+  }
+
+  // --- دوال إدارة المناطق (Regions) ---
   Future<List<RegionModel>> fetchRegion(int cityId) async {
     await ApiService().getToken();
 
@@ -96,91 +122,27 @@ class CommonViewRepository {
     }
   }
 
-  // Future<List<CitiesModel>> getCities() async {
-  //   await ApiService().getToken();
-  //
-  //   try {
-  //     // 1. الاتصال بالسيرفر
-  //     final response = await ApiService().dio.get(EndPointsStrings.getCitiesEndPoint);
-  //
-  //     // 2. فك تشفير البيانات بناءً على طريقتكم
-  //     var result = ApiService.decodeResp(response);
-  //
-  //     // 3. التحقق من وجود البيانات وتحويلها
-  //     if (result['data'] != null) {
-  //       List<CitiesModel> cities = (result['data'] as List)
-  //           .map((e) => CitiesModel.fromJson(e))
-  //           .toList();
-  //       return cities;
-  //     } else {
-  //       // في حال كان الرد ناجحاً لكن المصفوفة فارغة أو لا يوجد مفتاح 'data'
-  //       return [];
-  //     }
-  //
-  //   } on DioException catch (e) {
-  //     // ⚠️ معالجة أخطاء الشبكة والسيرفر (Dio Errors)
-  //     if (e.type == DioExceptionType.connectionTimeout ||
-  //         e.type == DioExceptionType.receiveTimeout) {
-  //       print("خطأ: انتهى وقت الاتصال بالسيرفر.");
-  //     } else if (e.type == DioExceptionType.badResponse) {
-  //       print("خطأ من السيرفر: الكود ${e.response?.statusCode}");
-  //     } else if (e.type == DioExceptionType.connectionError) {
-  //       print("خطأ: لا يوجد اتصال بالإنترنت.");
-  //     } else {
-  //       print("خطأ غير معروف في الشبكة: ${e.message}");
-  //     }
-  //
-  //     // يمكنك إرجاع مصفوفة فارغة، أو رمي خطأ ليلتقطه الـ ViewModel ويظهره للمستخدم
-  //     return []; // أو throw Exception('فشل الاتصال بالخادم');
-  //
-  //   } catch (e) {
-  //     // ⚠️ معالجة أخطاء الكود (مثل فشل تحويل JSON إلى CityModel)
-  //     print("خطأ في معالجة البيانات (Parsing Error): $e");
-  //     return [];
-  //   }
-  // }
+  Future<bool> createRegion(int cityId, String name) async {
+    try {
+      await ApiService().getToken();
+      final response = await ApiService().dio.post(EndPointsStrings.getRegionsEndPoint, data: {'cityId': cityId, 'name': name});
+      return response.statusCode == 200 || response.statusCode == 201;
+    } catch (e) { return false; }
+  }
 
-  // Future<List<RegionModel>> fetchRegionsByCity(int cityId) async {
-  //   await ApiService().getToken();
-  //
-  //   try {
-  //     // 1. الاتصال بالسيرفر
-  //     final response = await ApiService().dio.get('${EndPointsStrings.getRegionsByCityEndPoint}/$cityId');
-  //
-  //     // 2. فك تشفير البيانات بناءً على طريقتكم
-  //     var result = ApiService.decodeResp(response);
-  //
-  //     // 3. التحقق من وجود البيانات وتحويلها
-  //     if (result['data'] != null) {
-  //       List<RegionModel> regions = (result['data'] as List)
-  //           .map((e) => RegionModel.fromJson(e))
-  //           .toList();
-  //       return regions;
-  //     } else {
-  //       // في حال كان الرد ناجحاً لكن المصفوفة فارغة أو لا يوجد مفتاح 'data'
-  //       return [];
-  //     }
-  //
-  //   } on DioException catch (e) {
-  //     // ⚠️ معالجة أخطاء الشبكة والسيرفر (Dio Errors)
-  //     if (e.type == DioExceptionType.connectionTimeout ||
-  //         e.type == DioExceptionType.receiveTimeout) {
-  //       print("خطأ: انتهى وقت الاتصال بالسيرفر.");
-  //     } else if (e.type == DioExceptionType.badResponse) {
-  //       print("خطأ من السيرفر: الكود ${e.response?.statusCode}");
-  //     } else if (e.type == DioExceptionType.connectionError) {
-  //       print("خطأ: لا يوجد اتصال بالإنترنت.");
-  //     } else {
-  //       print("خطأ غير معروف في الشبكة: ${e.message}");
-  //     }
-  //
-  //     // يمكنك إرجاع مصفوفة فارغة، أو رمي خطأ ليلتقطه الـ ViewModel ويظهره للمستخدم
-  //     return []; // أو throw Exception('فشل الاتصال بالخادم');
-  //
-  //   } catch (e) {
-  //     // ⚠️ معالجة أخطاء الكود (مثل فشل تحويل JSON إلى CityModel)
-  //     print("خطأ في معالجة البيانات (Parsing Error): $e");
-  //     return [];
-  //   }
-  // }
+  Future<bool> updateRegion(int regionId, int cityId, String name) async {
+    try {
+      await ApiService().getToken();
+      final response = await ApiService().dio.put('${EndPointsStrings.getRegionsEndPoint}/$regionId', data: {'cityId': cityId, 'name': name});
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) { return false; }
+  }
+
+  Future<bool> deleteRegion(int regionId) async {
+    try {
+      await ApiService().getToken();
+      final response = await ApiService().dio.delete('${EndPointsStrings.getRegionsEndPoint}/$regionId');
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) { return false; }
+  }
 }

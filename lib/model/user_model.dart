@@ -1,3 +1,5 @@
+import '../configurations/data/end_points_manager.dart';
+
 class UserModel {
   final String id;
   final String? fullName;
@@ -26,6 +28,11 @@ class UserModel {
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
+    String? imageUrl = json['profileImageUrl'];
+    if (imageUrl != null && (imageUrl.startsWith('/') || imageUrl.startsWith('images'))) {
+      imageUrl = '${EndPointsStrings.baseUrl}$imageUrl'; // ضع الدومين الخاص بك
+    }
+
     return UserModel(
       id: json['id'] ?? '',
       fullName: json['fullName'],
@@ -33,7 +40,7 @@ class UserModel {
       email: json['email'],
       phoneNumber: json['phoneNumber'],
       location: json['location'],
-      profileImageUrl: json['profileImageUrl'],
+      profileImageUrl: imageUrl,
       bio: json['bio'],
       createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : null,
     );

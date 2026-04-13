@@ -8,10 +8,11 @@ import '../../../../../configurations/resources/strings_manager.dart';
 import '../../../../../configurations/user_preferences.dart';
 import '../../../../../model/login_model.dart';
 import '../../../../custom_widgets/dialog/error_dialog.dart';
-import '../../../../custom_widgets/dialog/overlay_helper.dart';
-import '../../../home/main_wrapper_screen.dart';
+import '../../../admin_web/main_screen/admin_main_screen.dart';
+import '../../../customer/home/main_wrapper_screen.dart';
 import 'login_view_rep.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class LoginViewModel extends ChangeNotifier {
   var email = '';
@@ -200,9 +201,20 @@ class LoginViewModel extends ChangeNotifier {
             commonViewModel.setCurrentUserId(userId);
             commonViewModel.setCurrentUserName(fullname);
 
-            Navigator.of(context).push(
-              MaterialPageRoute(builder: (context) => MainWrapperScreen()),
-            );
+            _isLoading = false;
+            notifyListeners();
+
+            if(kIsWeb) {
+              if(role == 'Admin') {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => AdminMainScreen()),
+                );
+              }
+            }else {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => MainWrapperScreen()),
+              );
+            }
           }
         }
       } on DioException catch (e) {
