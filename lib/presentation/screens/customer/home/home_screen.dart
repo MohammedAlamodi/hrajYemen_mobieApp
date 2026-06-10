@@ -9,6 +9,7 @@ import 'package:ye_hraj/presentation/custom_widgets/loading_widgets.dart';
 
 import '../../../../configurations/resources/assets_manager.dart';
 import '../categories/all_categories_screen.dart';
+import '../products/add_products/add_ad_screen.dart';
 import 'custome_widgets/Product_list_viewer.dart';
 import 'custome_widgets/category_item.dart';
 import 'custome_widgets/home_custom_app_bar.dart';
@@ -26,11 +27,14 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late HomeViewModel vm;
+
   @override
   void initState() {
     super.initState();
     vm = Provider.of<HomeViewModel>(context, listen: false);
-    Future.microtask(() => vm.getInitialData());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      vm.getInitialData();
+    });
   }
 
   double _uiScale(BuildContext context) { return 1.0; }
@@ -41,11 +45,8 @@ class _HomeScreenState extends State<HomeScreen> {
     vm = Provider.of<HomeViewModel>(context);
     final s = _uiScale(context);
 
-    // حساب الارتفاعات للأقسام
     final categoriesListHeight = (100.0 * s).clamp(92.0, 130.0);
     final categoriesExtent = (categoriesListHeight + (56.0 * s)).clamp(140.0, 190.0);
-    final bannerIconSize = (110.0 * s).clamp(90.0, 150.0);
-    final bannerExtent = (_isTablet(context) ? 190.0 : 175.0) * s;
 
     return Scaffold(
       backgroundColor: AppColors.current.appBackground,
@@ -57,76 +58,84 @@ class _HomeScreenState extends State<HomeScreen> {
             child: vm.isLoading
                 ? const Center(child: CustomLoadingWidget(text: 'جاري تحميل البيانات...'))
                 : NestedScrollView(
-              physics: const ClampingScrollPhysics(),
+              // ✅ الكلمة الصحيحة هي floatHeaderSlivers
+              floatHeaderSlivers: true,
               headerSliverBuilder: (context, innerBoxIsScrolled) {
                 List<Widget> slivers = [];
 
-                // 1. قسم الأقسام الرئيسية (🔥 ثابت ويصغر بنعومة)
+                // 1. قسم الأقسام الرئيسية (ثابت)
                 slivers.add(
                   SliverPersistentHeader(
-                    pinned: true, // 👈 السر هنا: يجعل الأقسام تثبت ولا تختفي
+                    pinned: true,
                     delegate: CategoriesPinnedHeaderDelegate(
                       vm: vm,
                       maxExtentHeight: categoriesExtent,
-                      minExtentHeight: categoriesListHeight, // الارتفاع الأدنى بعد التصغير
+                      minExtentHeight: categoriesListHeight,
                       scale: s,
                     ),
                   ),
                 );
 
-                // 2. البنر أو الأقسام الفرعية
+                // 2. الأقسام الفرعية (تختفي للأسفل وتظهر عند السحب للأعلى)
                 if (vm.selectedCategoryId != null) {
                   slivers.add(
-                    SliverToBoxAdapter(
-                      child: ResponsiveCenter(
-                        child: _SubCategoriesSection(vm: vm),
+                    SliverPersistentHeader(
+                      pinned: false,
+                      floating: true, // السلوك المطلوب: عائم
+                      delegate: SubCategoriesPinnedHeaderDelegate(
+                        vm: vm,
+                        height: 60.0,
                       ),
                     ),
                   );
-                } else {
-                  if (vm.sherTextCont.text.isEmpty) {
-                    slivers.add(
-                      SliverPersistentHeader(
-                        pinned: false,
-                        delegate: FadeSlideSliverHeaderDelegate(
-                          maxExtentHeight: bannerExtent,
-                          collapseDistanceFactor: 1.25,
-                          child: ResponsiveCenter(
-                            child: _PromoBanner(iconSize: bannerIconSize, scale: s),
-                          ),
-                        ),
-                      ),
-                    );
-                  }
                 }
 
                 return slivers;
               },
-              body: vm.isProductLoading
-                  ? const Center(child: CustomLoadingWidget(text: 'جاري تحميل البيانات...'))
-                  : ResponsiveCenter(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 60),
-                  child: vm.products.isNotEmpty
-                      ? ProductListViewer(
-                    titleWidget: CustomText(title: 'الإعلانات'),
-                    products: vm.products,
-                    isLoadingMore: vm.isLoadingMore,
-                    onScrollEnd: () => vm.loadMoreProducts(),
-                  )
-                      : Center(
-                    child: Column(
+              // 3. وضعنا الـ RefreshIndicator حول الـ body مباشرة لكي يعمل بشكل صحيح
+              body: RefreshIndicator(
+                color: AppColors.current.primary,
+                backgroundColor: Colors.white,
+                onRefresh: () async {
+                  await vm.getInitialData();
+                },
+                child: vm.isProductLoading
+                    ? ListView(
+                  // حولنا التحميل لـ ListView قابلة للسحب لكي تعمل علامة التحديث حتى اثناء التحميل
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.only(top: 100),
+                  children: const [
+                    Center(child: CustomLoadingWidget(text: 'جاري تحميل البيانات...')),
+                  ],
+                )
+                    : ResponsiveCenter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 60),
+                    child: vm.products.isNotEmpty
+                        ? ProductListViewer(
+                      titleWidget: CustomText(title: 'الإعلانات'),
+                      products: vm.products,
+                      isLoadingMore: vm.isLoadingMore,
+                      onScrollEnd: () => vm.loadMoreProducts(),
+                    )
+                        : ListView(
+                      // حولنا الحالة الفارغة لـ ListView قابلة للسحب لكي يقدر المستخدم يسحب للتحديث
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: const EdgeInsets.only(top: 100),
                       children: [
-                        const SizedBox(height: 100),
-                        CustomText(
-                          title: 'لا توجد إعلانات في هذا القسم حالياً',
-                          color: AppColors.current.blackGrey,
-                          size: 16,
+                        Center(
+                          child: CustomText(
+                            title: 'لا توجد إعلانات في هذا القسم حالياً',
+                            color: AppColors.current.blackGrey,
+                            size: 16,
+                          ),
                         ),
-                        const SizedBox(height: 8),
-                        IconButton(
-                          onPressed: () async => await vm.getInitialData(),
-                          icon: Icon(Icons.refresh, color: AppColors.current.primary),
+                        const SizedBox(height: 16),
+                        Center(
+                          child: IconButton(
+                            onPressed: () async => await vm.getInitialData(),
+                            icon: Icon(Icons.refresh, color: AppColors.current.primary, size: 30,),
+                          ),
                         )
                       ],
                     ),
@@ -165,16 +174,12 @@ class CategoriesPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    // حساب نسبة التمرير (من 0.0 إلى 1.0)
     final progress = (shrinkOffset / (maxExtentHeight - minExtentHeight)).clamp(0.0, 1.0);
-
-    // حساب نسبة التصغير (عندما يثبت يصغر بنسبة 15%)
     final scaleFactor = 1.0 - (0.2 * progress);
 
     return Container(
       decoration: BoxDecoration(
         color: AppColors.current.appBackground,
-        // إضافة ظل خفيف جداً من الأسفل عندما يثبت القسم
         boxShadow: progress > 0.8
             ? [
           BoxShadow(
@@ -190,19 +195,16 @@ class CategoriesPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
         child: ClipRect(
           child: Stack(
             children: [
-              // 1. صف العنوان (يرتفع للأعلى ويختفي أثناء السكرول)
               Positioned(
                 top: -shrinkOffset,
                 left: 0,
                 right: 0,
                 height: maxExtentHeight - minExtentHeight,
                 child: Opacity(
-                  opacity: 1.0 - progress, // يتلاشى تدريجياً
+                  opacity: 1.0 - progress,
                   child: _buildTitleRow(context),
                 ),
               ),
-
-              // 2. قائمة الأقسام (ثابتة في الأسفل وتصغر تدريجياً)
               Positioned(
                 bottom: 0,
                 left: 0,
@@ -210,8 +212,8 @@ class CategoriesPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
                 height: minExtentHeight,
                 child: Transform.scale(
                   scale: scaleFactor,
-                  alignment: Alignment.bottomCenter, // يصغر من الأسفل للأعلى
-                  child: _buildCategoriesList(),
+                  alignment: Alignment.bottomCenter,
+                  child: _buildCategoriesList(context),
                 ),
               ),
             ],
@@ -252,19 +254,19 @@ class CategoriesPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
     );
   }
 
-  Widget _buildCategoriesList() {
+  Widget _buildCategoriesList(BuildContext context) {
+    HomeViewModel homeViewModel = Provider.of<HomeViewModel>(context);
     return ListView.builder(
       scrollDirection: Axis.horizontal,
-      itemCount: vm.categories.length,
+      itemCount: homeViewModel.categories.length,
       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 0),
       itemBuilder: (context, index) {
-        final category = vm.categories[index];
-        final isSelected = vm.selectedCategoryId == category.id;
+        final category = homeViewModel.categories[index];
 
         return CategoryItem(
           category: category,
-          isSelected: isSelected,
-          onTap: () => vm.toggleCategory(category.id),
+          isSelected: homeViewModel.selectedCategoryId == category.id,
+          onTap: () => homeViewModel.toggleCategory(category.id),
         );
       },
     );
@@ -272,14 +274,12 @@ class CategoriesPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(covariant CategoriesPinnedHeaderDelegate oldDelegate) {
-    return vm != oldDelegate.vm ||
-        maxExtentHeight != oldDelegate.maxExtentHeight ||
-        minExtentHeight != oldDelegate.minExtentHeight;
+    return true;
   }
 }
 
 /// ----------------------------------------------------
-/// ✅ ResponsiveCenter (كما هي)
+/// ✅ ResponsiveCenter
 /// ----------------------------------------------------
 class ResponsiveCenter extends StatelessWidget {
   final Widget child;
@@ -316,67 +316,8 @@ class ResponsiveCenter extends StatelessWidget {
   }
 }
 
-/// ----------------------------------------------------
-/// ✅ FadeSlideSliverHeaderDelegate (كما هي)
-/// ----------------------------------------------------
-class FadeSlideSliverHeaderDelegate extends SliverPersistentHeaderDelegate {
-  final double maxExtentHeight;
-  final double collapseDistanceFactor;
-  final Widget child;
-
-  FadeSlideSliverHeaderDelegate({
-    required this.maxExtentHeight,
-    required this.child,
-    this.collapseDistanceFactor = 1.0,
-  });
-
-  @override
-  double get maxExtent => maxExtentHeight;
-
-  @override
-  double get minExtent => 0;
-
-  @override
-  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
-    final collapseDistance = maxExtent * collapseDistanceFactor;
-    final raw = 1 - (shrinkOffset / collapseDistance);
-    final t = raw.clamp(0.0, 1.0);
-    final eased = Curves.easeInOutCubic.transform(t);
-    final translateY = lerpDouble(-22, 0, eased)!;
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return ClipRect(
-          child: Opacity(
-            opacity: eased,
-            child: Transform.translate(
-              offset: Offset(0, translateY),
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.topCenter,
-                child: SizedBox(
-                  width: constraints.maxWidth,
-                  height: maxExtentHeight,
-                  child: child,
-                ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  @override
-  bool shouldRebuild(covariant FadeSlideSliverHeaderDelegate oldDelegate) {
-    return oldDelegate.maxExtentHeight != maxExtentHeight ||
-        oldDelegate.collapseDistanceFactor != collapseDistanceFactor ||
-        oldDelegate.child != child;
-  }
-}
-
 /// ------------------------------
-/// الأقسام الفرعية (كما هي)
+/// الأقسام الفرعية
 /// ------------------------------
 class _SubCategoriesSection extends StatelessWidget {
   final HomeViewModel vm;
@@ -462,82 +403,35 @@ class _SubCategoriesSection extends StatelessWidget {
   }
 }
 
-/// ------------------------------
-/// البنر الترويجي (كما هو)
-/// ------------------------------
-class _PromoBanner extends StatelessWidget {
-  final double iconSize;
-  final double scale;
+/// ----------------------------------------------------
+/// ✅ Delegate الخاص بالأقسام الفرعية
+/// ----------------------------------------------------
+class SubCategoriesPinnedHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final HomeViewModel vm;
+  final double height;
 
-  const _PromoBanner({
-    required this.iconSize,
-    required this.scale,
-  });
+  SubCategoriesPinnedHeaderDelegate({required this.vm, required this.height});
 
   @override
-  Widget build(BuildContext context) {
-    final smallSize = (Theme.of(context).textTheme.bodySmall?.fontSize ?? 14) - 2;
-    final pad = (14.0 * scale).clamp(12.0, 20.0);
-    final gap = (12.0 * scale).clamp(10.0, 16.0);
+  double get maxExtent => height;
 
+  @override
+  double get minExtent => height;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) {
     return Container(
-      padding: EdgeInsets.all(pad),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: const Alignment(0.8, 0.2),
-          end: const Alignment(0.1, 2.5),
-          colors: [AppColors.current.primary, AppColors.current.primary50],
-        ),
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CustomText(
-                  title: 'بيع منتجك اليوم!',
-                  color: Colors.white,
-                  fontWeight: FontWeight.w800,
-                ),
-                const SizedBox(height: 4),
-                CustomText(
-                  title: 'آلاف المشترين بانتظارك',
-                  color: const Color(0xFFCCFAF0),
-                  size: smallSize,
-                ),
-                SizedBox(height: gap),
-                Row(
-                  children: [
-                    CustomButton(
-                      onTap: () {},
-                      text: 'أضف إعلان مجاناً',
-                      btnTextSize: smallSize,
-                      btnTextColor: Colors.white,
-                      btnColor: const Color(0xFF2462EB),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          SizedBox(width: (12 * scale).clamp(10.0, 16.0)),
-          SizedBox(
-            width: iconSize,
-            height: iconSize,
-            child: FittedBox(
-              fit: BoxFit.contain,
-              child: CusSvgIcons(
-                iconAssetString: IconAssets.frame_persons,
-                size: iconSize,
-              ),
-            ),
-          ),
-        ],
+      color: AppColors.current.appBackground,
+      alignment: Alignment.center,
+      child: ResponsiveCenter(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: _SubCategoriesSection(vm: vm),
       ),
     );
+  }
+
+  @override
+  bool shouldRebuild(covariant SubCategoriesPinnedHeaderDelegate oldDelegate) {
+    return true;
   }
 }

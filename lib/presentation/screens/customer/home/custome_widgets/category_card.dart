@@ -50,10 +50,10 @@ class CategoryCard extends StatelessWidget {
       width: 50,
       height: 50,
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
+        color: Colors.transparent,
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(icon, color: const Color(0xFF2462EB)),
+      child: Icon(icon, color: AppColors.current.primary),
     );
   }
 

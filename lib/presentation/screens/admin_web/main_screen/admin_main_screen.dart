@@ -6,6 +6,7 @@ import '../../../../configurations/resources/app_colors.dart';
 import '../../../custom_widgets/custom_text.dart';
 import '../admin_stats/dashboard_admin_screen.dart';
 import '../ads_admin/ads_admin_screen.dart';
+import '../banks_admin/banks_admin_screen.dart';
 import '../categories_admin/categories_admin_screen.dart';
 import '../cities_and_region/cities_admin_screen.dart';
 import '../users_admin/users_admin_screen.dart';
@@ -33,6 +34,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
     const CategoriesAdminScreen(),
     const CitiesAdminScreen(),
     const UsersAdminScreen(),
+    const BanksAdminScreen(),
     AdsAdminScreen()
   ];
 
@@ -138,7 +140,7 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       children: [
         const SizedBox(height: 40),
         CustomText(
-          title: 'أدمن حراج حضرموت',
+          title: ' ',
           size: Theme.of(context).textTheme.bodySmall!.fontSize,
           fontWeight: FontWeight.bold,
           color: AppColors.current.primary,
@@ -148,7 +150,8 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
         _buildMenuItem(1, 'إدارة الفئات', Icons.category_outlined),
         _buildMenuItem(2, 'المدن والمناطق', Icons.location_city_outlined),
         _buildMenuItem(3, 'المستخدمين', Icons.people_outline),
-        _buildMenuItem(4, 'الإعلانات', Icons.campaign_outlined),
+        _buildMenuItem(4, 'الحسابات البنكيه', Icons.food_bank_outlined),
+        _buildMenuItem(5, 'الإعلانات', Icons.campaign_outlined),
       ],
     );
   }
@@ -190,9 +193,14 @@ class _AdminMainScreenState extends State<AdminMainScreen> {
       case 3:
         return 'سجل المستخدمين';
       case 4:
+        return 'الحسابات البنكيه';
+      case 5:
         return 'الإعلانات والمشاهدات';
       default:
         return 'الإدارة';
     }
   }
+
+
+
 }

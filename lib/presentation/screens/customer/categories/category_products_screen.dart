@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/localization/i18n.dart';
+import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_text.dart';
 import 'package:ye_hraj/presentation/custom_widgets/loading_widgets.dart';
+import 'package:ye_hraj/presentation/screens/customer/home/home_view_model.dart';
 import '../../../../model/category_model.dart';
 import '../../../custom_widgets/Custom_header_bar.dart';
 import '../home/custome_widgets/Product_list_viewer.dart';
@@ -19,11 +21,13 @@ class CategoryProductsScreen extends StatefulWidget {
 
 class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   late CategoryProductsViewModel vm;
+  late HomeViewModel homeViewModel;
 
   @override
   void initState() {
     super.initState();
     vm = Provider.of<CategoryProductsViewModel>(context, listen: false);
+    homeViewModel = Provider.of<HomeViewModel>(context, listen: false);
     // جلب الأقسام الفرعية لهذا القسم
     WidgetsBinding.instance.addPostFrameCallback((_) {
       vm.initData(widget.category.id);
@@ -33,6 +37,7 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
   @override
   Widget build(BuildContext context) {
     vm = Provider.of<CategoryProductsViewModel>(context);
+    homeViewModel = Provider.of<HomeViewModel>(context);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -43,7 +48,12 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
           CustomHeaderBar(
             title: widget.category.name,
             showSearch: true,
-            onSearchChange: (query) {},
+            searchController: homeViewModel.sherTextCont,
+            onSearchChange: (query) {
+              homeViewModel.toggleCategory(widget.category.id);
+
+              homeViewModel.onSearchTextChanged();
+            },
           ),
 
           // 2. المحتوى (المنتجات)
@@ -53,15 +63,6 @@ class _CategoryProductsScreenState extends State<CategoryProductsScreen> {
                 if (vm.isLoading) {
                   return Center(
                     child: CustomLoadingWidget(text: S.of(context)!.loading),
-                  );
-                }
-
-                if (vm.products.isEmpty) {
-                  return Center(
-                    child: CustomText(
-                      title: 'لا يوجد منتجات لهذا القسم',
-                      color: Colors.grey,
-                    ),
                   );
                 }
 
@@ -132,7 +133,7 @@ class SubCategoriesHorizontalList extends StatelessWidget {
               alignment: Alignment.center,
               decoration: BoxDecoration(
                 // لون الخلفية يتغير إذا كان محدداً
-                color: isSelected ? const Color(0xFF2462EB) : Colors.white,
+                color: isSelected ? AppColors.current.primary200 : Colors.white,
                 borderRadius: BorderRadius.circular(
                     isSelected ? 20 : 15
                 ),
@@ -140,7 +141,7 @@ class SubCategoriesHorizontalList extends StatelessWidget {
                 border: Border.all(
                   // لون الحدود يتغير إذا كان محدداً
                   color: isSelected
-                      ? const Color(0xFF2462EB)
+                      ? AppColors.current.primary
                       : const Color(0xFFE1E8EF),
                   width: 1.5,
                 ),

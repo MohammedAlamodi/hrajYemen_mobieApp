@@ -1,23 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/helpers_functions.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
+import 'package:ye_hraj/presentation/screens/customer/favorites/favorites_view_model.dart';
 
 import '../../../../custom_widgets/custom_text.dart';
 
 class ProductBottomBar extends StatelessWidget {
+  final int productId;
   final VoidCallback onCallTap;
   final VoidCallback onChatTap;
-  final VoidCallback onWhatsAppTap;
+  final VoidCallback onShareTap;
+  final VoidCallback onFavoriteTap;
 
   const ProductBottomBar({
-    Key? key,
+    super.key,
+    required this.productId,
     required this.onCallTap,
     required this.onChatTap,
-    required this.onWhatsAppTap,
-  }) : super(key: key);
+    required this.onFavoriteTap,
+    required this.onShareTap,
+  });
 
   @override
   Widget build(BuildContext context) {
+    FavoritesViewModel favoritesViewModel = Provider.of<FavoritesViewModel>(context,);
+    final isFav = favoritesViewModel.isFavorite(productId);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
@@ -45,7 +54,7 @@ class ProductBottomBar extends StatelessWidget {
                 fontWeight: FontWeight.bold
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF2462EB),
+              backgroundColor: AppColors.current.primary,
               padding: const EdgeInsets.symmetric(vertical: 12,horizontal: 20),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               elevation: 0,
@@ -75,9 +84,25 @@ class ProductBottomBar extends StatelessWidget {
           const SizedBox(width: 8),
 
           // زر المشاركة/المفضلة (أيقونات صغيرة)
-          _buildSmallIconBtn(Icons.share_outlined, () {}),
+          _buildSmallIconBtn(Icons.share_outlined, onShareTap),
           const SizedBox(width: 8),
-          _buildSmallIconBtn(Icons.favorite_border, () {}),
+          InkWell(
+            onTap: onFavoriteTap,
+            borderRadius: BorderRadius.circular(8),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFE1E8EF)),
+              ),
+              child: Icon(
+                  isFav? Icons.favorite :
+                  Icons.favorite_border,
+                  size: isFav? 23 : 18,
+                  color:  isFav? AppColors.current.primary : Color(0xFF63748A)),
+            ),
+          ),
+          // _buildSmallIconBtn(Icons.favorite_border, onFavoriteTap),
         ],
       ),
     );

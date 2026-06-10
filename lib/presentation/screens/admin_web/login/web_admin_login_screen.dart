@@ -59,14 +59,12 @@ class _WebAdminLoginScreenState extends State<WebAdminLoginScreen> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: ListView(
                 children: [
                   Center(
                     child: Image.asset(
                       ImageAssets.logo2,
-                      width: 150,
+                      width: 250,
                       fit: BoxFit.fitWidth,
                     ),
                   ),

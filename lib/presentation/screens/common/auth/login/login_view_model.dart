@@ -121,26 +121,31 @@ class LoginViewModel extends ChangeNotifier {
 
   // دالة تسجيل الدخول
   void onLoginClick(BuildContext context) async {
+    bool val = validate(context);
+    if (!val) return;
+
     commonViewModel = Provider.of<CommonViewModel>(context, listen: false);
-    
+
     _isLoading = true;
     notifyListeners();
 
     LoginResponseModel? apiResponse;
 
-    bool val = validate(context);
     if (val) {
       try {
         apiResponse = await _repo.login(userName, password);
 
-        debugPrint('************* Login successful, access token saved: ${apiResponse.data}');
-        debugPrint('************* Login successful, access token saved: ${apiResponse.data != null}');
+        debugPrint(
+          '************* Login successful, access token saved: ${apiResponse.data}',
+        );
+        debugPrint(
+          '************* Login successful, access token saved: ${apiResponse.data != null}',
+        );
 
         if (apiResponse.data != null) {
           LoginData? loginData = apiResponse.data;
 
           if (loginData!.accessToken != null) {
-
             final jwt = loginData.accessToken!;
 
             // قم بفصل الأجزاء
@@ -152,12 +157,15 @@ class LoginViewModel extends ChangeNotifier {
             }
 
             // فك التشفير للـ Header
-            final header = utf8.decode(base64Url.decode(base64Url.normalize(parts[0])));
+            final header = utf8.decode(
+              base64Url.decode(base64Url.normalize(parts[0])),
+            );
             debugPrint('-----Header: $header');
 
-
             // فك التشفير للـ Payload
-            final payload = utf8.decode(base64Url.decode(base64Url.normalize(parts[1])));
+            final payload = utf8.decode(
+              base64Url.decode(base64Url.normalize(parts[1])),
+            );
             debugPrint('-----Payload: $payload');
             // تحويل الـ Payload إلى JSON
             final Map<String, dynamic> payloadMap = json.decode(payload);
@@ -171,7 +179,6 @@ class LoginViewModel extends ChangeNotifier {
             String role = payloadMap['role'];
             String userId = payloadMap['nameid'];
             String fullname = payloadMap['fullname'];
-
 
             debugPrint('userId: $userId');
             debugPrint('role: $role');
@@ -194,7 +201,6 @@ class LoginViewModel extends ChangeNotifier {
               value: fullname,
             );
 
-
             // debugPrint('Login successful, access token saved: ${loginData.accessToken}');
 
             commonViewModel.setLoginIn(true);
@@ -204,39 +210,18 @@ class LoginViewModel extends ChangeNotifier {
             _isLoading = false;
             notifyListeners();
 
-            if(kIsWeb) {
-              if(role == 'Admin') {
+            if (kIsWeb) {
+              if (role == 'Admin') {
                 Navigator.of(context).push(
                   MaterialPageRoute(builder: (context) => AdminMainScreen()),
                 );
               }
-            }else {
+            } else {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => MainWrapperScreen()),
               );
             }
           }
-        }
-      } on DioException catch (e) {
-        _isLoading = false;
-        notifyListeners();
-
-        if (e.response != null) {
-          debugPrint('error in login e : $e');
-
-          String errorMessage = e.response?.data['message'];
-
-          // String message = errorMessage.contains('Invalid username or password')? S.of(context)!.login : 'An error occurred';
-
-          debugPrint('error message1 $errorMessage');
-          await showErrorDialog(
-            context: context,
-            message: S.of(context)!.errorHap,
-            description: errorMessage,
-          );
-        } else {
-          String errorMessage = 'Network error: ${e.message}';
-          debugPrint('error in login $errorMessage');
         }
       } catch (e) {
         _isLoading = false;
@@ -244,7 +229,17 @@ class LoginViewModel extends ChangeNotifier {
 
         debugPrint('***********error in login ${e.toString()}');
 
-        // OverlayHelper.showErrorToast(context, S.of(context)!.anErrorOccurred);
+        // إظهار الديلوج بالرسالة الملتقطة
+        if (context.mounted) {
+          await showErrorDialog(
+            context: context,
+            message: 'خطأ في تسجيل الدخول', // العنوان
+            description: e.toString().replaceAll(
+              'Exception: ',
+              '',
+            ), // محتوى الرسالة من السيرفر
+          );
+        }
       }
       _isLoading = false;
       notifyListeners();

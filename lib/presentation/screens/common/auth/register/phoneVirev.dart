@@ -1,135 +1,230 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../../../../configurations/data/unimtx_service.dart';
+import 'package:provider/provider.dart';
+import 'package:ye_hraj/configurations/resources/app_colors.dart';
+import 'package:ye_hraj/presentation/custom_widgets/custom_text_field.dart';
 
-class OtpPage extends StatefulWidget {
-  static const String routeName = "/OtpPage";
+import '../../../../custom_widgets/custom_text.dart';
+import 'register_view_model.dart';
+
+class OtpVerificationScreen extends StatefulWidget {
+  static const String routeName = '/OtpVerificationScreen';
+  final bool isEditing;
+
+  const OtpVerificationScreen({
+    super.key,
+    this.isEditing = false,
+  });
 
   @override
-  _OtpPageState createState() => _OtpPageState();
+  State<OtpVerificationScreen> createState() =>
+      _OtpVerificationScreenState();
 }
 
-class _OtpPageState extends State<OtpPage> {
-  final TextEditingController _phoneController = TextEditingController();
-  final TextEditingController _otpController = TextEditingController();
-  final UnimtxService _unimtxService = UnimtxService();
-  final UnimatrixService _unimatrixService = UnimatrixService();
-
-  String _apiKey = 'MXpVjBcgAsrCeweZHsQ4s9'; // ضع مفتاح API الخاص بك هنا
-  bool isResendEnabled = true; // هل يمكن إعادة الإرسال؟
-  int remainingSeconds = 0; // العد التنازلي لإعادة الإرسال
-  Timer? _timer; // المؤقت
-
-  void _sendOtp() async {
-    final phoneNumber = _phoneController.text.trim();
-
-    if (phoneNumber.isNotEmpty) {
-      await _unimtxService.sendOtp(
-        phoneNumber: phoneNumber,
-        message: 'Your OTP code for Sooq Tasheel is: {code}', // رسالة OTP من Unimtx
-        apiKey: _apiKey,
-      );
-      await _unimatrixService.sendSMS('phoneNumber', 'message');
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('OTP sent successfully')),
-      );
-
-      // تعطيل إعادة الإرسال وتفعيل المؤقت
-      _startResendCountdown();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter a valid phone number')),
-      );
-    }
-  }
-
-  void _verifyOtp() async {
-    final phoneNumber = _phoneController.text.trim();
-    final otpCode = _otpController.text.trim();
-
-    if (phoneNumber.isNotEmpty && otpCode.isNotEmpty) {
-      final isVerified = await _unimtxService.verifyOtp(
-        phoneNumber: phoneNumber,
-        otpCode: otpCode,
-        apiKey: _apiKey,
-      );
-
-      if (isVerified) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('OTP verified successfully')),
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Invalid OTP')),
-        );
-      }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in all fields')),
-      );
-    }
-  }
-
-  void _startResendCountdown() {
-    setState(() {
-      isResendEnabled = false; // تعطيل زر إعادة الإرسال
-      remainingSeconds = 30; // 30 ثانية
-    });
-
-    _timer?.cancel(); // إلغاء أي مؤقت سابق
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (remainingSeconds > 0) {
-        setState(() {
-          remainingSeconds--;
-        });
-      } else {
-        setState(() {
-          isResendEnabled = true; // تمكين زر إعادة الإرسال
-        });
-        timer.cancel(); // إنهاء المؤقت
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _timer?.cancel(); // التأكد من إلغاء المؤقت عند إغلاق الصفحة
-    super.dispose();
-  }
+class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
+  late RegisterViewModel registerViewModel;
 
   @override
   Widget build(BuildContext context) {
+    registerViewModel = Provider.of<RegisterViewModel>(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('OTP Verification')),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Colors.black),
+        title: CustomText(
+          title: 'تأكيد رقم الجوال',
+          fontWeight: FontWeight.bold,
+        ),
+        centerTitle: true,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            TextField(
-              controller: _phoneController,
-              keyboardType: TextInputType.phone,
-              decoration: const InputDecoration(labelText: 'Phone Number'),
+            const SizedBox(height: 20),
+
+            // أيقونة الجوال
+            Icon(
+              Icons.phone_iphone_rounded,
+              size: 80,
+              color: AppColors.current.primary,
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: isResendEnabled ? _sendOtp : null, // تعطيل الزر إذا لم يكن مسموحًا
-              child: isResendEnabled
-                  ? const Text('Send OTP')
-                  : Text('Resend in $remainingSeconds seconds'),
+            const SizedBox(height: 20),
+
+            // عنوان فرعي
+            Center(
+              child: CustomText(
+                title: 'تم إرسال رمز التحقق إلى',
+                fontWeight: FontWeight.w600,
+                size: 14,
+                color: Colors.grey,
+              ),
             ),
-            const SizedBox(height: 32),
-            TextField(
-              controller: _otpController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Enter OTP'),
+            const SizedBox(height: 6),
+            Center(
+              child: CustomText(
+                title:
+                '${registerViewModel.phoneCuntry} ${registerViewModel.phoneController}',
+                fontWeight: FontWeight.bold,
+                size: 18,
+                color: AppColors.current.primary,
+              ),
             ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _verifyOtp,
-              child: const Text('Verify OTP'),
-            ),
+
+            const SizedBox(height: 40),
+
+            // ==========================================
+            // الحالة 1: جاري إرسال الرمز
+            // ==========================================
+            if (!registerViewModel.isOtpSent &&
+                !registerViewModel.isPhoneVerified)
+              Column(
+                children: [
+                  const CircularProgressIndicator(),
+                  const SizedBox(height: 16),
+                  CustomText(
+                    title: 'جاري إرسال رمز التحقق...',
+                    size: 14,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ],
+              ),
+
+            // ==========================================
+            // الحالة 2: تم إرسال الرمز → أدخل الرمز
+            // ==========================================
+            if (registerViewModel.isOtpSent &&
+                !registerViewModel.isPhoneVerified) ...[
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0, right: 4.0),
+                child: CustomText(
+                  title: 'أدخل رمز التحقق',
+                  fontWeight: FontWeight.w800,
+                  size: 14,
+                  color: const Color(0xFF0F162A),
+                ),
+              ),
+              CustomTextField(
+                controller: registerViewModel.otpController,
+                type: TextInputType.number,
+                hint: 'الرمز المكون من 6 أرقام',
+                contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              ),
+              const SizedBox(height: 20),
+
+              // زر التحقق
+              SizedBox(
+                height: 50,
+                child: ElevatedButton(
+                  onPressed: registerViewModel.isOtpLoading
+                      ? null
+                      : () => registerViewModel.verifyOtp(context),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: registerViewModel.isOtpLoading
+                      ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  )
+                      : CustomText(
+                    title: 'تحقق من الرمز',
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // إعادة الإرسال
+              Center(
+                child: TextButton(
+                  onPressed: registerViewModel.isOtpLoading
+                      ? null
+                      : () => registerViewModel.sendOtp(context),
+                  child: CustomText(
+                    title: 'إعادة إرسال الرمز',
+                    color: AppColors.current.primary,
+                    fontWeight: FontWeight.bold,
+                    size: 14,
+                  ),
+                ),
+              ),
+            ],
+
+            // ==========================================
+            // الحالة 3: تم تأكيد الرقم → زر التسجيل
+            // ==========================================
+            if (registerViewModel.isPhoneVerified) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.check_circle,
+                      color: Colors.green, size: 28),
+                  const SizedBox(width: 8),
+                  CustomText(
+                    title: 'تم تأكيد رقم الجوال بنجاح',
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                    size: 16,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 30),
+
+              SizedBox(
+                height: 52,
+                child: ElevatedButton(
+                  onPressed: registerViewModel.isLoading
+                      ? null
+                      : () async {
+                    if (widget.isEditing) {
+                      await registerViewModel.updateProfile(context);
+                    } else {
+                      await registerViewModel.register(context);
+                    }
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: registerViewModel.isLoading
+                        ? Colors.grey
+                        : AppColors.current.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: registerViewModel.isLoading
+                      ? const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2.5,
+                    ),
+                  )
+                      : CustomText(
+                    title: widget.isEditing
+                        ? 'حفظ التعديلات'
+                        : 'تسجيل الحساب',
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

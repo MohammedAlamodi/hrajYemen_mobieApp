@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/localization/i18n.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
+import 'package:ye_hraj/presentation/custom_widgets/custom_button.dart';
 import 'package:ye_hraj/presentation/custom_widgets/loading_widgets.dart';
 import 'package:ye_hraj/presentation/screens/customer/products/add_products/add_ad_view_model.dart';
+import '../../../../model/product_model.dart';
 import '../../../custom_widgets/Custom_header_bar.dart';
 import '../../../custom_widgets/custom_text.dart';
 import 'custom_widgets/my_ad_card.dart';
@@ -82,8 +84,10 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
         return MyAdCard(
           title: product.title,
           price: product.price ?? 0.0,
-          date: vm.formatDate(product.createdAt),
+          priceCurrency: product.priceCurrency ?? 'RY',
+          date: formatTimeAgo(product.updateAt),
           views: product.viewsCount,
+          isBlocked: product.isBlocked,
           // استخدام الصورة الأولى أو صورة افتراضية
           imageUrl: product.images.isNotEmpty
               ? product.images.first.imageUrl
@@ -93,20 +97,174 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
 
           // الانتقال للتعديل
           onEditTap: () {
-            AddAdViewModel addAdVM = Provider.of<AddAdViewModel>(context, listen: false);
-            bool canUpdate = addAdVM.canEditProduct(context, product.updateAt); // نمرر المنتج للتعديل
-           if(canUpdate) {
-             Navigator.push(
-               context,
-               MaterialPageRoute(
-                 // ✅ نمرر المنتج الحقيقي هنا
-                 builder: (_) => EditAdScreen(product: product),
-               ),
-             ).then((_) {
-               // عند العودة من التعديل، نحدث القائمة
-               vm.fetchMyAds();
-             });
-           }
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                // ✅ نمرر المنتج الحقيقي هنا
+                builder: (_) => EditAdScreen(product: product),
+              ),
+            ).then((_) {
+              // عند العودة من التعديل، نحدث القائمة
+              vm.fetchMyAds();
+            });
+          },
+          onDeleteTap: () {
+            // إظهار ديلوج التأكيد
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: const CustomText(
+                    title: 'حذف الإعلان',
+                    fontWeight: FontWeight.bold,
+                  ),
+                  content: const CustomText(
+                    title: 'هل أنت متأكد من رغبتك في حذف هذا الإعلان؟',
+                  ),
+                  actions: [
+                    SizedBox(),
+                    Row(
+                      children: [
+                        CustomButton(
+                          loading: vm.isDeletingLoading,
+                          btnColor: Colors.redAccent,
+                          onTap: () async {
+                            await vm.deleteAd(
+                              context,
+                              product.id,
+                            ); // استدعاء دالة الحذف
+                          },
+                          text: 'نعم متأكد',
+                          btnTextColor: Colors.white,
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const CustomText(
+                            title: 'إلغاء',
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+          onToggleStatusTap: () {
+            // إظهار ديلوج التأكيد
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return AlertDialog(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  title: const CustomText(
+                    title: 'تغيير حالة الإعلان',
+                    fontWeight: FontWeight.bold,
+                  ),
+                  content: const CustomText(
+                    title:
+                        'هل أنت متأكد من رغبتك في تحويل حالة الإعلان إلى "مباع/منتهي"؟',
+                  ),
+                  actions: [
+                    SizedBox(),
+                    Row(
+                      children: [
+                        CustomButton(
+                          // style: ElevatedButton.styleFrom(
+                          //   backgroundColor: AppColors.current.primary,
+                          //   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          // ),
+                          loading: vm.isEditingLoading,
+                          onTap: () async {
+                            await vm.toggleAdStatus(
+                              context,
+                              product.id,
+                            ); // استدعاء دالة التغيير
+                          },
+                          text: 'نعم متأكد',
+                          btnTextColor: Colors.white,
+                        ),
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const CustomText(
+                            title: 'إلغاء',
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+          onRefTap: () async {
+            AddAdViewModel addAdVM = Provider.of<AddAdViewModel>(
+              context,
+              listen: false,
+            );
+
+            bool canUpdate = addAdVM.canEditProduct(
+              context,
+              product.updateAt,
+            ); // نمرر المنتج للتعديل
+            if (canUpdate) {
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    title: const CustomText(title: 'تجديد الإعلان', fontWeight: FontWeight.bold),
+                    content: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CustomText(title: 'هل أنت متأكد من رغبتك في تجديد الإعلان؟', size: Theme.of(context).textTheme.bodySmall!.fontSize! - 2,),
+                        SizedBox(height: 3,),
+                        CustomText(title: 'في المره القادمه ستتمكن من تحديثه بعد مرور ٢٤ ساعه.', size: Theme.of(context).textTheme.bodySmall!.fontSize! - 2,),
+                      ],
+                    ),
+
+                    actions: [
+                      SizedBox(),
+                      Row(
+                        children: [
+                          CustomButton(
+                            loading: addAdVM.isLoadingPostAd,
+                            onTap: () async {
+                              MyAdViewModel myAdVM = Provider.of<MyAdViewModel>(
+                                context,
+                                listen: false,
+                              );
+
+                              myAdVM.originalProduct = product;
+
+                              await myAdVM.editUpdateAtFun(context);
+
+                              if(context.mounted){
+                                Navigator.pop(context);
+                              }
+                            },
+                            text: 'نعم متأكد',
+                            btnTextColor: Colors.white,
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const CustomText(title: 'إلغاء', color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                    ],
+                  );
+                },
+              );
+            }
           },
         );
       },
@@ -144,7 +302,7 @@ class _MyAdsScreenState extends State<MyAdsScreen> {
         onTap: () => vm.changeTab(index),
         child: Container(
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF2462EB) : Colors.transparent,
+            color: isSelected ? AppColors.current.primary : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
           child: Center(

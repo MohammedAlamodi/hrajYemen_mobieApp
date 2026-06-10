@@ -6,10 +6,12 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/model/cities_model.dart';
+import 'package:ye_hraj/model/product_model.dart';
 import 'package:ye_hraj/model/region_model.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_text.dart';
 import 'package:ye_hraj/presentation/screens/common/common_view_model.dart';
 import '../../../../../model/category_model.dart';
+import '../../../../custom_widgets/custom_button.dart';
 import '../../home/home_repo.dart';
 import '../../home/home_view_model.dart';
 // import 'package:image_picker/image_picker.dart'; // تحتاج لهذه المكتبة فعلياً
@@ -73,9 +75,8 @@ class AddAdViewModel extends ChangeNotifier {
   bool get showPhoneNumber => _showPhoneNumber;
 
   // 🔥 متغيرات العملة
-  String priceCurrency = 'RY'; // العملة الافتراضية
-  final List<String> currencies = ['RY', 'SR', 'USA'];
-
+  String priceCurrency = 'ريال يمني'; // العملة الافتراضية
+  final List<String> currencies = ['ريال يمني', 'ريال سعودي', 'دولار'];
 
   // ✅ تحديث الفئة الرئيسية وجلب الفرعية بناءً عليها
   void setMainCategory(BuildContext context, int? categoryId) {
@@ -216,7 +217,7 @@ class AddAdViewModel extends ChangeNotifier {
 
   bool validateStep(BuildContext context) {
     if (_currentStep == 1) {
-      if (_selectedMainCategory == null || titleController.text.isEmpty) {
+      if (_selectedMainCategory == null || _selectedSubCategory == null || titleController.text.isEmpty|| descriptionController.text.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: CustomText(
@@ -349,11 +350,10 @@ class AddAdViewModel extends ChangeNotifier {
         ),
       );
 
+      clearData();
+
       // إغلاق الشاشة والعودة للرئيسية
       Navigator.pop(context);
-
-      // 💡 تلميح: هنا يفضل استدعاء دالة لتحديث قائمة الإعلانات في الصفحة الرئيسية
-      // Provider.of<HomeViewModel>(context, listen: false).getInitialData();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -363,4 +363,100 @@ class AddAdViewModel extends ChangeNotifier {
       );
     }
   }
+
+  void clearData() {
+    titleController.clear();
+    priceController.clear();
+    descriptionController.clear();
+    _selectedMainCategory = null;
+    _selectedSubCategory = null;
+    _selectedRegion = null;
+    _condition = 1;
+    _currentStep = 1;
+    _isAgreeToPostAd = false;
+    _selectedCity = null;
+    _images.clear();
+    _hasChat = true;
+    _hasCall = true;
+    _hasWhatsApp = false;
+    _showPhoneNumber = true;
+    priceCurrency = 'ريال يمني';
+    notifyListeners();
+  }
+
+  // Future<void> editUpdateAtFun(BuildContext context, ProductModel? originalProduct) async {
+  //   if (originalProduct == null) return;
+  //
+  //   // _isEditingLoading = true;
+  //   notifyListeners();
+  //
+  //   try {
+  //     final HomeRepository _repo = HomeRepository();
+  //
+  //     // 1. تجهيز البيانات النصية (المفاتيح يجب أن تطابق الـ API)
+  //     final Map<String, dynamic> updateData = {
+  //       'Title': originalProduct?.title ?? '',
+  //       'Description': originalProduct?.description ?? '',
+  //       'Price': originalProduct?.price ?? 0.0,
+  //       'PriceCurrency': originalProduct?.priceCurrency ?? currencies[0],
+  //       'Condition': originalProduct!.condition ?? '1',
+  //       'UpdateAt': DateTime.now(), // تحديث تاريخ التحديث إلى الوقت الحالي
+  //     };
+  //
+  //     final bool success = await _repo.updateProduct(
+  //       productId: originalProduct!.id,
+  //       data: updateData,
+  //       // images: originalProduct.images,
+  //     );
+  //
+  //     if (success) {
+  //       if (context.mounted) {
+  //         ScaffoldMessenger.of(
+  //           context,
+  //         ).showSnackBar(const SnackBar(content: Text('تم التحديث بنجاح')));
+  //         await fetchMyAds();
+  //         newImages.clear();
+  //         deletedImageIds.clear();
+  //         Navigator.pop(context);
+  //       }
+  //     }
+  //   } catch (e) {
+  //     debugPrint("Error: $e");
+  //   } finally {
+  //     _isEditingLoading = false;
+  //     notifyListeners();
+  //   }
+  // }
+
+  Future<void> refProduct(BuildContext context, id) async {
+    HomeViewModel homeVM = Provider.of<HomeViewModel>(context, listen: false);
+    _isLoadingPostAd = true;
+    notifyListeners();
+
+    bool isSuccess = await _repo.refProduct(context, id);
+
+    _isLoadingPostAd = false;
+    notifyListeners();
+
+    if (!context.mounted) return;
+
+    if (isSuccess) {
+      homeVM.getInitialData();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: CustomText(title:'تم إعادة تنشيط الإعلان بنجاح! 🎉'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: CustomText(title: 'حدث خطأ أثناء إعادة التنشيط، يرجى المحاولة لاحقاً.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
 }

@@ -1,8 +1,14 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/resources/strings_manager.dart';
 import 'package:ye_hraj/configurations/user_preferences.dart';
+import 'package:ye_hraj/presentation/screens/customer/home/home_view_model.dart';
 
 import '../../../../model/product_model.dart';
+import '../../../custom_widgets/custom_text.dart';
 import '../home/home_repo.dart';
 // import 'custom_widgets/my_ad_card.dart'; // إذا كنت تحتاجه لأي Enums أخرى
 
@@ -14,9 +20,16 @@ class MyAdViewModel extends ChangeNotifier {
 
   // --- State Variables ---
   bool _isLoading = false;
+  bool _isDeletingLoading = false;
+
+  bool get isDeletingLoading => _isDeletingLoading;
+
   bool _isEditingLoading = false;
   int _selectedTabIndex = 0; // 0 = نشطة, 1 = منتهية
+  String condition = '0'; // 0 = نشطة, 1 = منتهية
   List<ProductModel> _allAds = []; // كل الإعلانات
+
+  final HomeRepository _repo = HomeRepository();
 
   // المنتج الأصلي (للمقارنة أو التحديث)
   ProductModel? originalProduct;
@@ -42,8 +55,8 @@ class MyAdViewModel extends ChangeNotifier {
   }
 
   // 🔥 متغيرات العملة
-  String priceCurrency = 'RY'; // العملة الافتراضية
-  final List<String> currencies = ['RY', 'SR', 'USA'];
+  String priceCurrency = 'ريال يمني'; // العملة الافتراضية
+  final List<String> currencies = ['ريال يمني', 'ريال سعودي', 'دولار'];
 
   /// تهيئة حقول التعديل بالبيانات الحالية للمنتج
   void initControllers(ProductModel product) {
@@ -52,6 +65,7 @@ class MyAdViewModel extends ChangeNotifier {
     titleController.text = product.title;
     priceController.text = product.price?.toStringAsFixed(0) ?? '';
     descController.text = product.description ?? '';
+    // condition = product.condition ?? '1';
     priceCurrency = product.priceCurrency ?? currencies[0];
 
     // تجميع الموقع (مدينة - منطقة) بناءً على القيم القادمة من السيرفر
@@ -86,15 +100,16 @@ class MyAdViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    userId = await UserPreferences().getString(key: AppStrings.userIdKey, defaultValue: 'null'); // هنا يجب جلب الـ userId الحقيقي من بيانات المستخدم الحالي (مثلاً من SharedPreferences أو UserProvider)
+    userId = await UserPreferences().getString(
+      key: AppStrings.userIdKey,
+      defaultValue: 'null',
+    ); // هنا يجب جلب الـ userId الحقيقي من بيانات المستخدم الحالي (مثلاً من SharedPreferences أو UserProvider)
 
     _allAds = [];
 
-    final HomeRepository _repo = HomeRepository();
-
     _allAds = await _repo.fetchProducts(
       page: 1,
-      limit: 1000,
+      limit: 10000,
       myProducts: true,
     );
 
@@ -103,32 +118,227 @@ class MyAdViewModel extends ChangeNotifier {
   }
 
   /// حفظ التعديلات على الإعلان
-  Future<void> saveChanges(BuildContext context) async {
-    _isEditingLoading = true;
-    notifyListeners();
 
-    // محاكاة الاتصال بالسيرفر
-    await Future.delayed(const Duration(seconds: 2));
+  // --- أضف هذه المتغيرات في بداية الكلاس لإدارة الصور ---
+  List<int> deletedImageIds = []; // لتخزين IDs الصور التي يقرر المستخدم حذفها
+  // داخل كلاس MyAdViewModel
+  List<File> newImages = []; // قائمة الصور الجديدة المضافة من الجهاز
+  final ImagePicker _picker = ImagePicker();
 
-    _isEditingLoading = false;
-    notifyListeners();
-
-    // هنا تضع كود إرسال البيانات للـ API (باستخدام toSubmitJson الذي أنشأناه سابقاً)
-    print("Saving: ${titleController.text}, Price: ${priceController.text}");
-
-    if (context.mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('تم حفظ التعديلات بنجاح')));
-      Navigator.pop(context); // الرجوع للخلف بعد الحفظ
+  // دالة لاختيار صور جديدة
+  Future<void> pickNewImages() async {
+    final List<XFile> pickedFiles = await _picker.pickMultiImage();
+    if (pickedFiles.isNotEmpty) {
+      newImages.addAll(pickedFiles.map((xFile) => File(xFile.path)).toList());
+      notifyListeners();
     }
   }
 
-  /// حذف إعلان (محاكاة)
-  void deleteAd(int id) {
-    _allAds.removeWhere((element) => element.id == id);
+  // دالة لحذف صورة جديدة (قبل الرفع)
+  void removeNewImage(int index) {
+    newImages.removeAt(index);
     notifyListeners();
-    // هنا يجب إضافة كود الحذف الفعلي من الـ API
+  }
+
+  // تحديث دالة saveChanges لإرسال الصور الجديدة والمحذوفات
+  Future<void> editMyAdFun(BuildContext context, ) async {
+    if (originalProduct == null) return;
+
+    _isEditingLoading = true;
+    notifyListeners();
+
+    try {
+      final HomeRepository _repo = HomeRepository();
+
+      // 1. تجهيز البيانات النصية (المفاتيح يجب أن تطابق الـ API)
+      final Map<String, dynamic> updateData = {
+        'Title': titleController.text.trim(),
+        'Description': descController.text.isEmpty
+            ? ''
+            : descController.text.trim(),
+        'Price': double.tryParse(priceController.text) ?? 0.0,
+        'PriceCurrency': priceCurrency,
+        'regionId': originalProduct!.regionId,
+        'cityId': originalProduct!.cityId,
+        'categoryId': originalProduct!.categoryId,
+        'subCategoryId': originalProduct!.subCategoryId,
+        'Condition': originalProduct!.condition ?? '1',
+        'UpdateAt': originalProduct!.updateAt,
+      };
+
+      // 2. إضافة الصور المحذوفة (إذا كان السيرفر يدعم استقبالها في FormData)
+      if (deletedImageIds.isNotEmpty) {
+        for (int i = 0; i < deletedImageIds.length; i++) {
+          updateData['DeletedImageIds[$i]'] = deletedImageIds[i];
+        }
+      }
+
+      final bool success = await _repo.updateProduct(
+        productId: originalProduct!.id,
+        data: updateData,
+        images: newImages,
+      );
+
+      if (success) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar( SnackBar(
+              content: CustomText(title:'تم التحديث بنجاح ✅'),
+              backgroundColor: Colors.green,
+          ));
+          await fetchMyAds();
+          newImages.clear();
+          deletedImageIds.clear();
+          if(context.mounted){
+            Navigator.pop(context);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint("Error: $e");
+    } finally {
+      _isEditingLoading = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> editUpdateAtFun(BuildContext context, ) async {
+
+    if (originalProduct == null) return;
+
+    _isEditingLoading = true;
+    notifyListeners();
+
+    try {
+      final HomeRepository _repo = HomeRepository();
+
+      // 1. تجهيز البيانات النصية (المفاتيح يجب أن تطابق الـ API)
+      final Map<String, dynamic> updateData = {
+        'Title': originalProduct?.title ?? '',
+        'Description': originalProduct?.description ?? '',
+        'Price': originalProduct?.price ?? 0.0,
+        'PriceCurrency': originalProduct?.priceCurrency ?? currencies[0],
+        'Condition': originalProduct!.condition ?? '1',
+        'regionId': originalProduct!.regionId,
+        'cityId': originalProduct!.cityId,
+        'categoryId': originalProduct!.categoryId,
+        'subCategoryId': originalProduct!.subCategoryId,
+        'UpdateAt': DateTime.now(), // تحديث تاريخ التحديث إلى الوقت الحالي
+      };
+
+      final bool success = await _repo.updateProduct(
+        productId: originalProduct!.id,
+        data: updateData,
+        // images: originalProduct.images,
+      );
+
+      if (success) {
+        if (context.mounted) {
+          HomeViewModel homeVM = Provider.of<HomeViewModel>(context, listen: false);
+
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('تم التحديث بنجاح')));
+          await fetchMyAds();
+          homeVM.getInitialData();
+
+          newImages.clear();
+          deletedImageIds.clear();
+          // if(context.mounted){
+          //   Navigator.pop(context);
+          // }
+        }
+      }else{
+        if (context.mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('حدث خطأ أثناء التحديث')));
+        }
+      }
+    } catch (e) {
+      debugPrint("Error: $e");
+    } finally {
+      _isEditingLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// تغيير حالة المنتج (نشط / مباع) في السيرفر
+  Future<void> toggleAdStatus(BuildContext context, int productId) async {
+    _isEditingLoading = true; // نستخدم لودينج القائمة الرئيسي أو لودينج خاص
+    notifyListeners();
+
+    try {
+      final HomeRepository _repo = HomeRepository();
+
+      // استدعاء الدالة الموجودة مسبقاً في الـ Repo الخاص بك
+      final bool success = await _repo.toggleChangeActiveStatus(productId);
+
+      if (success) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              backgroundColor: Colors.green,
+              content: Text('تم تغيير حالة الإعلان بنجاح'),
+            ),
+          );
+        }
+        // إعادة جلب البيانات لتحديث القوائم (نشطة/منتهية)
+        fetchMyAds();
+        Navigator.pop(context); // إغلاق الديلوج
+      } else {
+        throw Exception("فشل تحديث الحالة");
+      }
+    } catch (e) {
+      debugPrint("Error toggling status: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حدث خطأ أثناء تغيير الحالة')),
+        );
+      }
+    } finally {
+      _isEditingLoading = false;
+      notifyListeners();
+    }
+  }
+
+  void removeExistingImage(int imageId) {
+    deletedImageIds.add(imageId);
+    // كود إضافي لإخفاء الصورة من الواجهة مؤقتاً
+    notifyListeners();
+  }
+
+  /// حذف إعلان (محاكاة)
+  Future<void> deleteAd(BuildContext context, int id) async{
+    _isDeletingLoading = true;
+    notifyListeners();
+
+    _repo.deleteProduct(id).then((value) {
+      _isDeletingLoading = false;
+      notifyListeners();
+
+      if (value) {
+        if(context.mounted) {
+          HomeViewModel homeVM = Provider.of<HomeViewModel>(context, listen: false);
+          ScaffoldMessenger.of(
+            context,).showSnackBar(const SnackBar(
+              backgroundColor: Colors.green,
+              content: Text('تم حذف الإعلان بنجاح')
+
+          ));
+          fetchMyAds(); // تحديث القائمة بعد الحذف
+          homeVM.getInitialData();
+          Navigator.pop(context); // إغلاق الديلوج
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              backgroundColor: Colors.redAccent,
+              content: Text('حدث خطأ أثناء حذف الإعلان')),
+        );
+      }
+    });
   }
 
   /// وضع علامة "تم البيع" أو إنهاء الإعلان

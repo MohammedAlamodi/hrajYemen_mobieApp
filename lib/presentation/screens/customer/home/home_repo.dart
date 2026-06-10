@@ -13,6 +13,77 @@ import '../../../../model/product_image_model.dart';
 import '../../../../model/product_model.dart';
 
 class HomeRepository {
+  // Future<List<ProductModel>> fetchProducts({
+  //   required int page,
+  //   int limit = 5,
+  //   String? search,
+  //   int? categoryId,
+  //   int? subCategoryId,
+  //   int? cityId,
+  //   double? minPrice,
+  //   double? maxPrice,
+  //   int? condition, // 1 أو 2
+  //   bool myProducts = false,
+  //   bool myFavorites = false,
+  //   bool? isActive,
+  //   String? orderBy,
+  //   bool ascendingOrder = false,
+  // }) async {
+  //   await ApiService().getToken();
+  //
+  //   try {
+  //     // 1. تجهيز الفلاتر (Parameters)
+  //     Map<String, dynamic> queryParams = {
+  //       'PageNumber': page,
+  //       'PageSize': limit,
+  //       'myProducts': myProducts,
+  //       'myFavorites': myFavorites,
+  //       'FilterQuery.AscendingOrder': ascendingOrder,
+  //     };
+  //
+  //     // إضافة الفلاتر التي لها قيمة فقط
+  //     if (search != null && search.isNotEmpty) queryParams['FilterQuery.Search'] = search;
+  //     if (categoryId != null) queryParams['FilterQuery.CategoryId'] = categoryId;
+  //     if (subCategoryId != null) queryParams['FilterQuery.SubCategoryId'] = subCategoryId;
+  //     if (cityId != null) queryParams['FilterQuery.CityId'] = cityId;
+  //     if (minPrice != null) queryParams['FilterQuery.MinPrice'] = minPrice;
+  //     if (maxPrice != null) queryParams['FilterQuery.MaxPrice'] = maxPrice;
+  //     if (condition != null) queryParams['FilterQuery.Condition'] = condition;
+  //     if (isActive != null) queryParams['isActive'] = isActive;
+  //     if (orderBy != null && orderBy.isNotEmpty) queryParams['FilterQuery.OrderBy'] = orderBy;
+  //
+  //     // 2. إرسال الطلب للسيرفر
+  //     // تأكد أن المسار 'api/Products' صحيح حسب مشروعك
+  //     final response = await ApiService().dio.get(
+  //       EndPointsStrings.getProductsEndPoint,
+  //       queryParameters: queryParams,
+  //     );
+  //
+  //     // 3. معالجة الاستجابة
+  //     if (response.statusCode == 200 && response.data != null) {
+  //       var data = response.data;
+  //
+  //       // التحقق أن البيانات تحتوي على المفتاح "items"
+  //       if (data is Map && data['items'] != null) {
+  //         List<ProductModel> products = (data['items'] as List)
+  //             .map((e) => ProductModel.fromJson(e))
+  //             .toList();
+  //
+  //         return products;
+  //       }
+  //     }
+  //
+  //     return []; // إرجاع قائمة فارغة إذا لم تكن هناك بيانات
+  //
+  //   } on DioException catch (e) {
+  //     debugPrint("خطأ شبكة في جلب المنتجات: ${e.message}");
+  //     return [];
+  //   } catch (e) {
+  //     debugPrint("خطأ في معالجة المنتجات: $e");
+  //     return [];
+  //   }
+  // }
+
   Future<List<ProductModel>> fetchProducts({
     required int page,
     int limit = 5,
@@ -22,17 +93,21 @@ class HomeRepository {
     int? cityId,
     double? minPrice,
     double? maxPrice,
-    int? condition, // 1 أو 2
+    int? condition,
     bool myProducts = false,
     bool myFavorites = false,
-    bool? isActive,
     String? orderBy,
     bool ascendingOrder = false,
+
+    // 🔥 البارامترات الخاصة بلوحة التحكم
+    int? adId,
+    String? userId,
+    bool? isActive,   // 👈 (true: نشط، false: منتهي)
+    bool? isBlocked,  // 👈 (true: محظور)
   }) async {
     await ApiService().getToken();
 
     try {
-      // 1. تجهيز الفلاتر (Parameters)
       Map<String, dynamic> queryParams = {
         'PageNumber': page,
         'PageSize': limit,
@@ -41,7 +116,6 @@ class HomeRepository {
         'FilterQuery.AscendingOrder': ascendingOrder,
       };
 
-      // إضافة الفلاتر التي لها قيمة فقط
       if (search != null && search.isNotEmpty) queryParams['FilterQuery.Search'] = search;
       if (categoryId != null) queryParams['FilterQuery.CategoryId'] = categoryId;
       if (subCategoryId != null) queryParams['FilterQuery.SubCategoryId'] = subCategoryId;
@@ -49,31 +123,31 @@ class HomeRepository {
       if (minPrice != null) queryParams['FilterQuery.MinPrice'] = minPrice;
       if (maxPrice != null) queryParams['FilterQuery.MaxPrice'] = maxPrice;
       if (condition != null) queryParams['FilterQuery.Condition'] = condition;
-      if (isActive != null) queryParams['isActive'] = isActive;
       if (orderBy != null && orderBy.isNotEmpty) queryParams['FilterQuery.OrderBy'] = orderBy;
 
-      // 2. إرسال الطلب للسيرفر
-      // تأكد أن المسار 'api/Products' صحيح حسب مشروعك
+      // 🔥 تمرير الفلاتر الإدارية للسيرفر
+      if (adId != null) queryParams['FilterQuery.Id'] = adId;
+      if (userId != null) queryParams['FilterQuery.UserId'] = userId;
+
+      // 👈 تمرير قيم الحالة والحظر للسيرفر بناءً على المودل الجديد
+      if (isActive != null) queryParams['isActive'] = isActive;
+      if (isBlocked != null) queryParams['IsBlocked'] = isBlocked;
+
       final response = await ApiService().dio.get(
         EndPointsStrings.getProductsEndPoint,
         queryParameters: queryParams,
       );
 
-      // 3. معالجة الاستجابة
       if (response.statusCode == 200 && response.data != null) {
         var data = response.data;
-
-        // التحقق أن البيانات تحتوي على المفتاح "items"
         if (data is Map && data['items'] != null) {
           List<ProductModel> products = (data['items'] as List)
               .map((e) => ProductModel.fromJson(e))
               .toList();
-
           return products;
         }
       }
-
-      return []; // إرجاع قائمة فارغة إذا لم تكن هناك بيانات
+      return [];
 
     } on DioException catch (e) {
       debugPrint("خطأ شبكة في جلب المنتجات: ${e.message}");
@@ -83,22 +157,6 @@ class HomeRepository {
       return [];
     }
   }
-
-  // دالة لتغيير حالة الإعلان (مثلاً إيقافه من قبل الإدارة)
-  // Future<bool> changeProductStatus(int productId, bool isActive) async {
-  //   try {
-  //     await ApiService().getToken();
-  //     // 👈 تأكد من مسار الـ API الصحيح لتحديث حالة الإعلان لديكم
-  //     final response = await ApiService().dio.put(
-  //       '${EndPointsStrings.getProductsEndPoint}/$productId',
-  //       data: {'isActive': isActive},
-  //     );
-  //     return response.statusCode == 200 || response.statusCode == 204;
-  //   } catch (e) {
-  //     debugPrint("Error changing product status: $e");
-  //     return false;
-  //   }
-  // }
 
   Future<ProductModel?> fetchProductDetails(int productId) async {
     try {
@@ -228,36 +286,33 @@ class HomeRepository {
 
   Future<bool> updateProduct({
     required int productId,
-    required Map<String, dynamic> data,
-    // لم نضف مصفوفة صور هنا لأننا نريد فقط تغيير الحالة،
-    // وإذا كان هناك صور قديمة فهي ستُرسل كروابط نصية داخل الـ data
+    required Map<String, dynamic> data,List<File>? images, // أضف هذا الباراميتر
   }) async {
     try {
-      // 1. إنشاء كائن FormData من بيانات المنتج كاملة
       FormData formData = FormData.fromMap(data);
 
-      await ApiService().getToken();
+      // إضافة الصور الجديدة للـ FormData
+      if (images != null) {
+        for (var file in images) {
+          formData.files.add(MapEntry(
+            'NewImages',
+            await MultipartFile.fromFile(
+              file.path,
+            ),
+          ));
+        }
+      }
 
-      // 2. إرسال الطلب للسيرفر (PUT لتعديل البيانات)
+      debugPrint("FormData for update: ${formData.fields} "
+          "with ${formData.files.length} files");
+      await ApiService().getToken();
       final response = await ApiService().dio.put(
         '${EndPointsStrings.getProductsEndPoint}/$productId',
         data: formData,
       );
 
-      // 3. التحقق من النجاح
-      if (response.statusCode == 200 || response.statusCode == 204) {
-        return true;
-      }
-      return false;
-
-    } on DioException catch (e) {
-      debugPrint("خطأ أثناء تعديل الإعلان: ${e.message}");
-      if (e.response != null) {
-        debugPrint("تفاصيل الخطأ من السيرفر: ${e.response?.data}");
-      }
-      return false;
+      return response.statusCode == 200 || response.statusCode == 204;
     } catch (e) {
-      debugPrint("خطأ غير متوقع: $e");
       return false;
     }
   }
@@ -268,7 +323,7 @@ class HomeRepository {
       await ApiService().getToken();
 
       // 👈 استخدام المسار الجديد الذي زودتني به
-      final response = await ApiService().dio.post(
+      final response = await ApiService().dio.put(
         'api/Products/$productId/toggle-status-blocked',
       );
 
@@ -288,7 +343,30 @@ class HomeRepository {
     }
   }
 
-  // أضف هذه الدوال إلى HomeRepository الخاص بك
+  Future<bool> toggleChangeActiveStatus(int productId) async {
+    try {
+      await ApiService().getToken();
+
+      // 👈 استخدام المسار الجديد الذي زودتني به
+      final response = await ApiService().dio.put(
+        'api/Products/$productId/toggle-status',
+      );
+
+      // التحقق من النجاح بناءً على الرد المتوقع
+      if (response.statusCode == 200 && response.data != null) {
+        // يمكنك طباعة الرسالة القادمة من السيرفر للتأكد
+        debugPrint("Server Message: ${response.data['message']}");
+        return true;
+      }
+      return false;
+    } on DioException catch (e) {
+      debugPrint("خطأ أثناء تغيير حالة الحظر: ${e.message}");
+      return false;
+    } catch (e) {
+      debugPrint("خطأ غير متوقع: $e");
+      return false;
+    }
+  }
 
   // --- دوال إدارة الفئات (Categories Admin) ---
   Future<List<CategoryModel>> fetchCategories() async {
@@ -497,11 +575,29 @@ class HomeRepository {
   }
 
   // دالة جلب إحصائيات لوحة التحكم
-  Future<AdminStatsModel?> fetchAdminStats() async {
+  Future<AdminStatsModel?> fetchAdminStats({
+    DateTime? startDate,
+    DateTime? endDate,
+  }) async {
     try {
       await ApiService().getToken();
 
-      final response = await ApiService().dio.get('api/Admin/GetStats/stats');
+      // 1. تجهيز المعاملات (Query Parameters)
+      Map<String, dynamic> queryParams = {};
+
+      // 2. فحص التواريخ وإضافتها للرابط بصيغة ISO (الصيغة المفضلة لـ .NET)
+      if (startDate != null) {
+        queryParams['fromDate'] = startDate;
+      }
+      if (endDate != null) {
+        queryParams['toDate'] = endDate;
+      }
+
+      // 3. إرسال الطلب مع المعاملات
+      final response = await ApiService().dio.get(
+        'api/Admin/GetStats/stats',
+        queryParameters: queryParams.isNotEmpty ? queryParams : null, // تمرير الفلتر هنا
+      );
 
       if (response.statusCode == 200 && response.data != null) {
         return AdminStatsModel.fromJson(response.data);
@@ -510,6 +606,34 @@ class HomeRepository {
     } catch (e) {
       debugPrint("Error fetching admin stats: $e");
       return null;
+    }
+  }
+
+  Future<bool> deleteProduct(int id) async {
+    try {
+      await ApiService().getToken();
+      final response = await ApiService().dio.delete('${EndPointsStrings.getProductsEndPoint}/$id');
+      return response.statusCode == 200 || response.statusCode == 204;
+    } catch (e) {
+      debugPrint("Error deleting subcategory: $e");
+      return false;
+    }
+  }
+
+  Future<bool> refProduct(BuildContext context, int id) async {
+    try {
+      await ApiService().getToken();
+      final response = await ApiService().dio.put('${EndPointsStrings.getProductsEndPoint}/$id/ref');
+      if (response.statusCode == 200) {
+        debugPrint("تم تحديث الإعلان بنجاح");
+        return true;
+      } else {
+        debugPrint("فشل في تحديث الإعلان: ${response.statusCode}");
+        return false;
+      }
+    } catch (e) {
+      debugPrint("Error refreshing product: $e");
+      return false;
     }
   }
 }

@@ -20,14 +20,14 @@ class LoginViewRepository {
     return _singleton;
   }
 
-  Future<LoginResponseModel> login(String email, String password) async {
+  Future<LoginResponseModel> login2(String email, String password) async {
     try {
       // final context = MyApp.navigatorKey.currentContext;
 
       final response = await ApiService().dio.post(
         EndPointsStrings.loginUserEndPoint, // استبدله بـ EndPointsStrings.loginEndPoint
         data: {
-          "email": email,       // أو "username" حسب ما يقبله الباك إند
+          "userName": email,       // أو "username" حسب ما يقبله الباك إند
           "password": password,
         },
       );
@@ -89,29 +89,42 @@ class LoginViewRepository {
     }
   }
 
-  // Future<LoginResponseModel?> loginApp(
-  //      {
-  //        required BuildContext context,
-  //       required String username,
-  //       required String password,
-  //     }) async {
-  //   LoginResponseModel? apiResponse = LoginResponseModel();
-  //
-  //   debugPrint("error in user name $apiResponse ");
-  //
-  //   await ApiService().getBaseUrlAndToken();
-  //   return ApiService().dio.post(EndPointsStrings.loginUserEndPoint, data: {
-  //     'username': username,
-  //     'password': password,
-  //   }).then((value) async {
-  //     debugPrint("value loginAppSuccess $value");
-  //
-  //     var results = ApiService.decodeResp(value);
-  //
-  //     apiResponse = LoginResponseModel.fromJson(results);
-  //     debugPrint(apiResponse.toString());
-  //
-  //     return apiResponse;
-  //   });
-  // }
+  // داخل ملف login_view_rep.dart في دالة login
+
+  Future<LoginResponseModel> login(String email, String password) async {
+    try {
+      final response = await ApiService().dio.post(
+        EndPointsStrings.loginUserEndPoint,
+        data: {
+          "userName": email,
+          "password": password,
+        },
+      );
+
+      // التحقق من النجاح بناءً على هيكلة الـ JSON الخاص بك
+      if (response.data['success'] == true) {
+        return LoginResponseModel.fromJson(response.data);
+      } else {
+        // إذا كان success: false، نرمي الرسالة الموجودة في الـ JSON
+        throw response.data['message'] ?? 'فشل تسجيل الدخول';
+      }
+
+    } on DioException catch (e) {
+      // استخراج رسالة الخطأ من Dio
+      String errorMessage = 'حدث خطأ غير متوقع';
+
+      if (e.response != null && e.response?.data != null) {
+        // السيرفر رد بخطأ (مثل 400 أو 401) وفيه رسالة
+        if (e.response?.data is Map) {
+          errorMessage = e.response?.data['message'] ?? e.response?.data['error'] ?? 'خطأ في البيانات';
+        }
+      } else if (e.type == DioExceptionType.connectionError) {
+        errorMessage = 'لا يوجد اتصال بالإنترنت';
+      }
+
+      throw errorMessage; // نمرر الرسالة للـ ViewModel
+    } catch (e) {
+      throw e.toString();
+    }
+  }
 }

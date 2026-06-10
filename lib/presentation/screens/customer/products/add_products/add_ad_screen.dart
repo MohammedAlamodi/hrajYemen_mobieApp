@@ -101,7 +101,7 @@ class _AddAdScreenState extends State<AddAdScreen> {
 
                       btnColor: (vm.currentStep == 4 && !vm.isAgreeToPostAd)
                           ? Colors.grey
-                          : const Color(0xFF2462EB),
+                          : AppColors.current.primary,
                       loading: vm.isLoadingPostAd,
                       btnTextColor: Colors.white,
                     ),

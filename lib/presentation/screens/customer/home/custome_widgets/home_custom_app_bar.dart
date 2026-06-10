@@ -5,6 +5,7 @@ import '../../../../custom_widgets/custom_text.dart';
 import '../../../../custom_widgets/custom_text_field.dart';
 import '../../../common/common_view_model.dart';
 import '../home_view_model.dart';
+import 'filter_bottom_sheet.dart';
 
 class HomeCustomAppBar extends StatelessWidget {
   late CommonViewModel commonViewModel;
@@ -22,36 +23,54 @@ class HomeCustomAppBar extends StatelessWidget {
       color: Colors.white,
       child: Column(
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-             CustomText(
-                title: commonViewModel.isLoggedIn ? 'مرحبا بك ${commonViewModel.currentUserName}' : '  مرحبا بك نورتنا',
-                fontWeight: FontWeight.bold,
-             ),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          //   children: [
+          //    CustomText(
+          //       title: commonViewModel.isLoggedIn ? 'مرحبا بك ${commonViewModel.currentUserName}' : '  مرحبا بك نورتنا',
+          //       fontWeight: FontWeight.bold,
+          //    ),
+          //
+          //     // زر الإشعارات
+          //     Container(
+          //       padding: const EdgeInsets.all(8),
+          //       decoration: BoxDecoration(
+          //         shape: BoxShape.circle,
+          //         border: Border.all(color: const Color(0xFFE1E8EF)),
+          //       ),
+          //       child: const Icon(Icons.notifications_outlined, size: 20),
+          //     ),
+          //   ],
+          // ),
 
-              // زر الإشعارات
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: const Color(0xFFE1E8EF)),
-                ),
-                child: const Icon(Icons.notifications_outlined, size: 20),
-              ),
-            ],
-          ),
           const SizedBox(height: 16),
           // حقل البحث
-          CustomTextField(
-            textAlign: TextAlign.right,
-            hint: 'ابحث عن سيارة، جوال، شقة...',
-            controller: homeViewModel.sherTextCont,
-            prefixIcon: const Icon(Icons.search, color: Colors.grey),
-            labelText: 'ابحث عن سيارة، جوال، شقة...',
-            onFileSubmitted: (value) {
-                homeViewModel.onSearchTextChanged();
-            },
+          Row(
+            children: [
+              // إعداد زر الفلتر في واجهة المنتجات (ProductsScreen)
+              Expanded(
+                child: CustomTextField(
+                  textAlign: TextAlign.right,
+                  hint: 'ابحث عن سيارة، جوال، شقة...',
+                  controller: homeViewModel.sherTextCont,
+                  prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                  labelText: 'ابحث عن سيارة، جوال، شقة...',
+                  onFileSubmitted: (value) {
+                      homeViewModel.onSearchTextChanged();
+                  },
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.filter_list),
+                onPressed: () async {
+                  if(homeViewModel.cities.isEmpty) {
+                    homeViewModel.fetchCities();
+                  }
+                  // 1. فتح نافذة الفلتر وانتظار النتيجة
+                  await FilterBottomSheet.show(context, homeViewModel);
+                },
+              ),
+            ],
           ),
         ],
       ),

@@ -56,6 +56,12 @@ class ProfileRepository {
   Future<UserProfileModel?> fetchUserProfile() async {
     try {
       String userId = await UserPreferences().getString(key: AppStrings.userIdKey, defaultValue: '');
+
+      if(userId.toString() == '') {
+        debugPrint("معرف المستخدم غير موجود في التفضيلات.");
+        return null;
+      }
+
       // 👈 تأكد من تعديل هذا المسار ليتطابق مع الـ API الخاص بك (مثلاً: api/Account/Profile)
       final response = await ApiService().dio.get('${EndPointsStrings.getUserProfileEndPoint}/$userId');
 

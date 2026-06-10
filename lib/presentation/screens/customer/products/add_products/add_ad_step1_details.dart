@@ -49,7 +49,7 @@ class AddAdStep1Details extends StatelessWidget {
         // الفئة الفرعية (اختياري)
         const SizedBox(height: 16),
 
-        _buildLabel(context, 'الفئة الفرعية (اختياري)', isRequired: false),
+        _buildLabel(context, 'الفئة الفرعية', isRequired: true),
 
         CustomBottomSheetWithSearch(
           cotx: context,
@@ -95,7 +95,7 @@ class AddAdStep1Details extends StatelessWidget {
           children: [
             // 1. حقل إدخال السعر (يأخذ مساحة أكبر)
             Expanded(
-              flex: 3,
+              flex: 5,
               child: _buildTextField(
                 controller: vm.priceController,
                 hint: '0',
@@ -107,7 +107,7 @@ class AddAdStep1Details extends StatelessWidget {
 
             // 2. قائمة اختيار العملة (Dropdown)
             Expanded(
-              flex: 1,
+              flex: 2,
               child: Container(
                 height: 50, // نفس ارتفاع حقل النص تقريباً
                 padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -126,7 +126,7 @@ class AddAdStep1Details extends StatelessWidget {
                         value: currency,
                         child: CustomText(
                           title: currency,
-                          size: Theme.of(context).textTheme.bodySmall!.fontSize! - 1,
+                          size: Theme.of(context).textTheme.bodySmall!.fontSize! - 5,
                           fontWeight: FontWeight.bold,
                         ),
                       );

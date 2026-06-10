@@ -47,30 +47,29 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyCXOlolPNbeSD_e8dVvTINOcz1ahBVtle0',
-    appId: '1:272623175483:web:e747afe0579ee266f6191e',
-    messagingSenderId: '272623175483',
-    projectId: 'hraj-hd5',
-    authDomain: 'hraj-hd5.firebaseapp.com',
-    storageBucket: 'hraj-hd5.firebasestorage.app',
-    measurementId: 'G-C2ZJ940WX2',
+    apiKey: 'AIzaSyDqQWthUuKHNwmtSJFwPoDz497yJja8p4E',
+    appId: '1:184368422258:web:d80b7ec386b2f475da11eb',
+    messagingSenderId: '184368422258',
+    projectId: 'hraj-ye5',
+    authDomain: 'hraj-ye5.firebaseapp.com',
+    storageBucket: 'hraj-ye5.firebasestorage.app',
+    measurementId: 'G-8SJ8TE5BEL',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyAG6_U-0lvr38Ydlm2bfjEO00Fb2YT2gMM',
-    appId: '1:272623175483:android:eeeb304dc1d8be07f6191e',
-    messagingSenderId: '272623175483',
-    projectId: 'hraj-hd5',
-    storageBucket: 'hraj-hd5.firebasestorage.app',
+    apiKey: 'AIzaSyBdcjp6gFxDN2xeeWzazRs2ws8FnbdYSZo',
+    appId: '1:184368422258:android:9fbcc2a4c64162eada11eb',
+    messagingSenderId: '184368422258',
+    projectId: 'hraj-ye5',
+    storageBucket: 'hraj-ye5.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyD815YqbLxyWJjbdf0SGwj20HOknSbRSZw',
-    appId: '1:272623175483:ios:a276f3ab990a7ef0f6191e',
-    messagingSenderId: '272623175483',
-    projectId: 'hraj-hd5',
-    storageBucket: 'hraj-hd5.firebasestorage.app',
+    apiKey: 'AIzaSyACo6vOspkq0o-PWBYCxNN7ye8i8Q7vfCo',
+    appId: '1:184368422258:ios:e18aa88b0223a9b5da11eb',
+    messagingSenderId: '184368422258',
+    projectId: 'hraj-ye5',
+    storageBucket: 'hraj-ye5.firebasestorage.app',
     iosBundleId: 'com.example.yeHraj',
   );
-
 }

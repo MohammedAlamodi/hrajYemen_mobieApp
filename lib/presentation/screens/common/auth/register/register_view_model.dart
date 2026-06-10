@@ -23,7 +23,7 @@ class RegisterViewModel extends ChangeNotifier {
   final TextEditingController passwordController = TextEditingController();
   final TextEditingController bioController = TextEditingController();
 
-  // 🔥 متغيرات رقم الهاتف النصية (تم التعديل)
+  // 🔥 متغيرات رقم الهاتف النصية
   String phoneController = '7********';
   String phoneCuntry = '+967';
 
@@ -63,8 +63,6 @@ class RegisterViewModel extends ChangeNotifier {
 
   late CommonViewModel commonViewModel;
 
-  // 🗑️ تم حذف الـ Constructor الذي كان يحتوي على addListener لأنه لم يعد له حاجة
-
   // ==========================================
   // دوال التقاط رقم الهاتف والدولة
   // ==========================================
@@ -78,7 +76,7 @@ class RegisterViewModel extends ChangeNotifier {
   void setPhoneNumber(String? number) {
     if (number == null) return;
     phoneController = number;
-    _onPhoneChanged(); // 🔥 نستدعي دالة الفحص هنا بدلاً من الـ listener!
+    _onPhoneChanged();
     notifyListeners();
   }
 
@@ -136,8 +134,8 @@ class RegisterViewModel extends ChangeNotifier {
         bioController.text = userData.bio ?? '';
         existingImageUrl = userData.profileImageUrl;
 
-        // 🔥 حماية: فحص إذا كان الرقم يحتوي على (-) لتجنب الكراش للمستخدمين القدامى
-        if (userData.phoneNumber != null && userData.phoneNumber!.contains('-')) {
+        if (userData.phoneNumber != null &&
+            userData.phoneNumber!.contains('-')) {
           List<String> a = userData.phoneNumber!.split('-');
           phoneCuntry = a[0];
           phoneController = a[1];
@@ -145,7 +143,6 @@ class RegisterViewModel extends ChangeNotifier {
           phoneController = userData.phoneNumber ?? '';
         }
 
-        // حفظ الرقم القديم، واعتباره موثقاً مسبقاً
         _originalPhone = phoneController;
         _isPhoneVerified = true;
 
@@ -158,6 +155,60 @@ class RegisterViewModel extends ChangeNotifier {
   }
 
   // ==========================================
+  // 🔥 التحقق من بيانات الفورم قبل الانتقال لصفحة الـ OTP
+  // ==========================================
+  bool validateRegistrationForm(BuildContext context) {
+    if (!isEditingMode) {
+      if (emailController.text.trim().isEmpty) {
+        _showError(context, 'يرجى إدخال اسم المستخدم');
+        return false;
+      }
+    }
+
+    if (!isEditingMode && passwordController.text.isEmpty) {
+      _showError(context, 'يرجى إدخال كلمة المرور');
+      return false;
+    }
+
+    if (nameController.text.trim().isEmpty) {
+      _showError(context, 'يرجى إدخال الاسم الكامل');
+      return false;
+    }
+
+    String phone = phoneController.trim();
+    if (phone.isEmpty || phone == '7********') {
+      _showError(context, 'يرجى إدخال رقم جوال صحيح');
+      return false;
+    }
+
+    return true;
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: CustomText(
+          size: Theme.of(context).textTheme.bodySmall!.fontSize! - 2,
+          title: message,
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
+
+  // ==========================================
+  // 🔥 إعادة ضبط حالة الـ OTP (تستدعى قبل فتح صفحة التحقق)
+  // ==========================================
+  void resetOtpState() {
+    _isPhoneVerified = false;
+    _isOtpSent = false;
+    _isOtpLoading = false;
+    _verificationId = null;
+    otpController.clear();
+    notifyListeners();
+  }
+
+  // ==========================================
   // 🔥 دوال الفايربيس (إرسال وتحقق OTP)
   // ==========================================
 
@@ -166,38 +217,51 @@ class RegisterViewModel extends ChangeNotifier {
     String phoneCun = phoneCuntry.trim();
 
     if (phone.isEmpty || phone == '7********') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال رقم هاتف صحيح'), backgroundColor: Colors.red),
-      );
+      _showError(context, 'يرجى إدخال رقم هاتف صحيح');
       return;
     }
 
     _isOtpLoading = true;
+    _isOtpSent = false;
+    _isPhoneVerified = false;
     notifyListeners();
 
+    await FirebaseAuth.instance.setLanguageCode('ar');
+
     await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: '$phoneCun$phone', // دمج المفتاح مع الرقم لفايربيس
+      phoneNumber: '$phoneCun$phone',
       verificationCompleted: (PhoneAuthCredential credential) async {
         _isPhoneVerified = true;
-        _isOtpSent = false;
+        _isOtpSent = true; // ✅ نبقيها true حتى تظهر الواجهة الصحيحة
         _isOtpLoading = false;
         notifyListeners();
       },
       verificationFailed: (FirebaseAuthException e) {
         _isOtpLoading = false;
+        _isOtpSent = false;
         notifyListeners();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('فشل الإرسال: ${e.message}'), backgroundColor: Colors.red),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('فشل الإرسال: ${e.message}'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
       },
       codeSent: (String verificationId, int? resendToken) {
         _verificationId = verificationId;
         _isOtpSent = true;
         _isOtpLoading = false;
         notifyListeners();
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم إرسال كود التحقق بنجاح'), backgroundColor: Colors.green),
-        );
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('تم إرسال كود التحقق بنجاح'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
       },
       codeAutoRetrievalTimeout: (String verificationId) {
         _verificationId = verificationId;
@@ -207,9 +271,7 @@ class RegisterViewModel extends ChangeNotifier {
 
   Future<void> verifyOtp(BuildContext context) async {
     if (otpController.text.trim().length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('يرجى إدخال الرمز المكون من 6 أرقام'), backgroundColor: Colors.red),
-      );
+      _showError(context, 'يرجى إدخال الرمز المكون من 6 أرقام');
       return;
     }
 
@@ -225,16 +287,23 @@ class RegisterViewModel extends ChangeNotifier {
       await FirebaseAuth.instance.signInWithCredential(credential);
 
       _isPhoneVerified = true;
-      _isOtpSent = false;
       _isOtpLoading = false;
       notifyListeners();
 
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('تم تأكيد رقم الجوال بنجاح'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
     } catch (e) {
       _isOtpLoading = false;
       notifyListeners();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('رمز التحقق غير صحيح'), backgroundColor: Colors.red),
-      );
+      if (context.mounted) {
+        _showError(context, 'رمز التحقق غير صحيح');
+      }
     }
   }
 
@@ -255,6 +324,8 @@ class RegisterViewModel extends ChangeNotifier {
     _selectedRegion = null;
     _isPhoneVerified = false;
     _isOtpSent = false;
+    _isOtpLoading = false;
+    _verificationId = null;
   }
 
   void setCity(BuildContext context, int? cityId) {
@@ -293,7 +364,8 @@ class RegisterViewModel extends ChangeNotifier {
   }
 
   Future<void> pickImage() async {
-    final pickedFile = await ImagePicker().pickImage(source: ImageSource.gallery);
+    final pickedFile =
+    await ImagePicker().pickImage(source: ImageSource.gallery);
     if (pickedFile != null) {
       _personalPhoto = File(pickedFile.path);
       notifyListeners();
@@ -301,13 +373,10 @@ class RegisterViewModel extends ChangeNotifier {
   }
 
   Future<void> register(BuildContext context) async {
-    if (emailController.text.trim().isEmpty || passwordController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: CustomText(size: Theme.of(context).textTheme.bodySmall!.fontSize! - 2, title: 'البريد، كلمة المرور، والمدينة حقول إجبارية!'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (emailController.text.trim().isEmpty ||
+        passwordController.text.isEmpty) {
+      _showError(
+          context, 'البريد، كلمة المرور، والمدينة حقول إجبارية!');
       return;
     }
 
@@ -319,7 +388,7 @@ class RegisterViewModel extends ChangeNotifier {
       name: nameController.text.trim(),
       email: emailController.text.trim(),
       password: passwordController.text,
-      phoneNumber: '$phoneCuntry-${phoneController.trim()}', // 🔥 الحفظ بالصيغة المطلوبة مع -
+      phoneNumber: '$phoneCuntry-${phoneController.trim()}',
       bio: bioController.text.trim(),
       cityId: _selectedCity?.id,
       regionId: _selectedRegion?.id,
@@ -333,12 +402,20 @@ class RegisterViewModel extends ChangeNotifier {
 
     if (isSuccess) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: CustomText(size: 14, title: 'تم إنشاء الحساب بنجاح! 🎉'), backgroundColor: Colors.green),
+        SnackBar(
+          content: CustomText(size: 14, title: 'تم إنشاء الحساب بنجاح! 🎉'),
+          backgroundColor: Colors.green,
+        ),
       );
-      Navigator.pop(context);
+      // 🔥 إغلاق صفحة الـ OTP وصفحة التسجيل معاً
+      Navigator.of(context).pop();
+      if (Navigator.canPop(context)) Navigator.of(context).pop();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: CustomText(size: 14, title: 'حدث خطأ أثناء التسجيل.'), backgroundColor: Colors.red),
+        SnackBar(
+          content: CustomText(size: 14, title: 'حدث خطأ أثناء التسجيل.'),
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
@@ -347,14 +424,15 @@ class RegisterViewModel extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
 
-    String currentUserId = await UserPreferences().getString(key: AppStrings.userIdKey, defaultValue: '');
+    String currentUserId = await UserPreferences()
+        .getString(key: AppStrings.userIdKey, defaultValue: '');
 
     bool isSuccess = await _repo.updateUserProfile(
       userId: currentUserId,
       name: nameController.text.trim(),
       email: emailController.text.trim(),
       password: passwordController.text,
-      phoneNumber: '$phoneCuntry-${phoneController.trim()}', // 🔥 الحفظ بالصيغة المطلوبة مع -
+      phoneNumber: '$phoneCuntry-${phoneController.trim()}',
       bio: bioController.text.trim(),
       cityId: _selectedCity?.id,
       regionId: _selectedRegion?.id,
@@ -366,23 +444,34 @@ class RegisterViewModel extends ChangeNotifier {
       notifyListeners();
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: CustomText(size: 14, title: 'حدث خطأ أثناء التحديث.'), backgroundColor: Colors.red),
+          SnackBar(
+            content: CustomText(size: 14, title: 'حدث خطأ أثناء التحديث.'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
       return;
     } else {
-      await UserPreferences().saveString(key: AppStrings.userNameKey, value: nameController.text.trim());
-      await UserPreferences().saveString(key: AppStrings.userEmailKey, value: emailController.text.trim());
+      await UserPreferences().saveString(
+          key: AppStrings.userNameKey, value: nameController.text.trim());
+      await UserPreferences().saveString(
+          key: AppStrings.userEmailKey, value: emailController.text.trim());
 
-      if(!context.mounted) return;
+      if (!context.mounted) return;
 
-      ProfileViewModel profileVM = Provider.of<ProfileViewModel>(context, listen: false);
+      ProfileViewModel profileVM =
+      Provider.of<ProfileViewModel>(context, listen: false);
       profileVM.initData();
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: CustomText(size: 14, title: 'تم تحديث الملف الشخصي بنجاح! 🎉'), backgroundColor: Colors.green),
+        SnackBar(
+          content: CustomText(
+              size: 14, title: 'تم تحديث الملف الشخصي بنجاح! 🎉'),
+          backgroundColor: Colors.green,
+        ),
       );
-      Navigator.pop(context);
+      Navigator.of(context).pop();
+      if (Navigator.canPop(context)) Navigator.of(context).pop();
     }
 
     _isLoading = false;

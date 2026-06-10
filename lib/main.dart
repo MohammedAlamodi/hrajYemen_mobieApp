@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:ye_hraj/presentation/screens/admin_web/banks_admin/banks_admin_view_model.dart';
 import 'configurations/helpers_functions.dart';
 import 'configurations/localization/i18n.dart';
 import 'configurations/user_preferences.dart';
@@ -24,6 +25,7 @@ import 'presentation/screens/customer/my_products/my_ad_view_model.dart';
 import 'presentation/screens/customer/products/add_products/add_ad_view_model.dart';
 import 'presentation/screens/customer/products/product_details_view_model.dart';
 import 'presentation/screens/customer/profile/profile_view_model.dart';
+import 'presentation/screens/customer/profile/settings/banks_mobile_vm.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,7 +38,7 @@ void main() async {
     runApp(MultiProvider(providers: _providers, child: const MyApp()));
   });
 }
-
+// hraj_13579
 // void main() async {
 //   WidgetsFlutterBinding.ensureInitialized();
 //   await UserPreferences().init();
@@ -57,7 +59,8 @@ final List<SingleChildWidget> _providers = [
   ChangeNotifierProvider(create: (_) => MyAdViewModel()),
   ChangeNotifierProvider(create: (_) => RegisterViewModel()),
   ChangeNotifierProvider(create: (_) => CategoryProductsViewModel()),
-  // ChangeNotifierProvider(create: (ctx) => RegistrationViewModel()),
+  ChangeNotifierProvider(create: (_) => BanksAdminVM()),
+  ChangeNotifierProvider(create: (_) => BanksMobileVM()),
 ];
 
 // class MyApp extends StatelessWidget {

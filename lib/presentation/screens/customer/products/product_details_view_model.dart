@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:ye_hraj/configurations/resources/strings_manager.dart';
 import 'package:ye_hraj/configurations/user_preferences.dart';
 import 'package:ye_hraj/model/product_image_model.dart';
@@ -210,72 +211,37 @@ class ProductDetailsViewModel extends ChangeNotifier {
     );
   }
 
-  // دالة الانتقال للشات
-  // Future<void> startChatWithSeller(BuildContext context, ProductModel product) async {
-  //   // 1. تحقق أن المستخدم مسجل دخول
-  //   // if (currentUserId == null) { goToLogin(); return; }
-  //
-  //   String currentUserId = await UserPreferences().getString(key: AppStrings.userIdKey, defaultValue: '');
-  //
-  //   debugPrint("Current User ID: $currentUserId, Seller ID: ${product.user?.id.toString()}");
-  //   // 2. تحقق أن المستخدم لا يراسل نفسه
-  //   if (currentUserId.toString() == product.user?.id.toString()) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('لا يمكنك مراسلة نفسك!')),
-  //     );
-  //     return;
-  //   }
-  //
-  //   String senderName = await UserPreferences().getString(key: AppStrings.userNameKey, defaultValue: '--'); // يمكنك تعديل هذا ليكون اسم المستخدم الحقيقي إذا متوفر
-  //   String senderImagePrfile = await UserPreferences().getString(key: 'senderImagePrfile', defaultValue: '--'); // يمكنك تعديل هذا ليكون اسم المستخدم الحقيقي إذا متوفر
-  //
-  //   // 3. الانتقال للشات مع تمرير "المنتج"
-  //   Navigator.push(
-  //     context,
-  //     MaterialPageRoute(
-  //       builder: (_) => ChatScreen(
-  //         currentUserId: currentUserId,   // آيدي المستخدم الحالي (أنا)
-  //         senderName: senderName,   // آيدي المستخدم الحالي (أنا)
-  //         senderProfileImageUrl: senderImagePrfile,   // آيدي المستخدم الحالي (أنا)
-  //         otherUserId: product.user?.id ?? '0',  // آيدي البائع (صاحب الإعلان)
-  //         otherUserName: product.userName ?? '', // اسم البائع (للعرض في الهيدر)
-  //         otherUserImageUrl: '',
-  //         productContext: product,
-  //       ),
-  //     ),
-  //   );
-  // }
-}
+// داخل كلاس ProductDetailsViewModel
+  void shareProduct(BuildContext context, ProductModel product) async {
 
-// class ProductDetailsViewModel extends ChangeNotifier {
-//   int _currentImageIndex = 0;
-//   bool _isDescriptionExpanded = false;
-//
-//   int get currentImageIndex => _currentImageIndex;
-//   bool get isDescriptionExpanded => _isDescriptionExpanded;
-//
-//   void onPageChanged(int index) {
-//     _currentImageIndex = index;
-//     notifyListeners();
-//   }
-//
-//   void toggleDescription() {
-//     _isDescriptionExpanded = !_isDescriptionExpanded;
-//     notifyListeners();
-//   }
-//
-//   // دوال الاتصال والمراسلة (Logic)
-//   void makeCall() {
-//     // launchUrl(Uri.parse("tel:+967700000000"));
-//     print("Connecting to call...");
-//   }
-//
-//   void openWhatsApp() {
-//     print("Opening WhatsApp...");
-//   }
-//
-//   void navigateToChat(BuildContext context) {
-//     // Navigator.push Named...
-//     print("Navigate to internal chat");
-//   }
-// }
+    final String appLink = "https://play.google.com/store/apps/details?id=com.alamodi_dev.ye_hraj";
+    final String message = "شاهد هذا الإعلان: ${product.title}\nحمل التطبيق من هنا: $appLink";
+
+    try {
+      // 3. استدعاء نافذة المشاركة
+      await Share.share(
+        message,
+        subject: product.title, // موضوع الرسالة (يظهر في الإيميل مثلاً)
+      );
+    } catch (e) {
+      debugPrint("Error sharing product: $e");
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('حدث خطأ أثناء محاولة المشاركة')),
+        );
+      }
+    }
+  }
+
+
+  void shareProduct2(BuildContext context, ProductModel product) {
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('ميزة المشاركة قيد التطوير!'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+}

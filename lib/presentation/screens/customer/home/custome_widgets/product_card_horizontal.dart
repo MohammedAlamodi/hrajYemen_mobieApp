@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import '../../../../../model/product_image_model.dart';
 import '../../../../../model/product_model.dart';
 import '../../../../custom_widgets/custom_text.dart';
+import '../../../../custom_widgets/get_amount_txt.dart';
 import '../../favorites/favorites_view_model.dart';
 
 class ProductCardHorizontal extends StatefulWidget {
@@ -150,11 +151,21 @@ class _ProductCardHorizontalState extends State<ProductCardHorizontal> {
                       ),
 
                       // السعر
-                      CustomText(
-                        title: widget.product.price.toString(),
-                        size: Theme.of(context).textTheme.bodySmall!.fontSize! + 1, // تكبير بسيط للسعر
-                        fontWeight: FontWeight.w800,
-                        color: AppColors.current.blue,
+                      Row(
+                        children: [
+                          CustomText(
+                            title: getAmountWithoutDot(widget.product.price.toString()),
+                            size: Theme.of(context).textTheme.bodySmall!.fontSize! + 1,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.current.primary,
+                          ),
+                          CustomText(
+                            title: ' ${widget.product.priceCurrency} ',
+                            size: Theme.of(context).textTheme.bodySmall!.fontSize! - 5,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.current.grey,
+                          ),
+                        ],
                       ),
 
                       // الصف السفلي (موقع، وقت، مفضلة)
@@ -189,7 +200,7 @@ class _ProductCardHorizontalState extends State<ProductCardHorizontal> {
                                     const Icon(Icons.access_time, size: 12, color: Color(0xFF63748A)),
                                     const SizedBox(width: 4),
                                     CustomText(
-                                      title: formatTimeAgo(widget.product.createdAt),
+                                      title: formatTimeAgo(widget.product.updateAt),
                                       size: 10,
                                       color: const Color(0xFF63748A),
                                     ),
@@ -224,95 +235,3 @@ class _ProductCardHorizontalState extends State<ProductCardHorizontal> {
     );
   }
 }
-
-// class ProductCardHorizontal extends StatelessWidget {
-//   final ProductModel product;
-//
-//   const ProductCardHorizontal({Key? key, required this.product}) : super(key: key);
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Container(
-//       // height: 120, // ارتفاع ثابت للكارد الأفقي
-//       margin: const EdgeInsets.only(bottom: 12),
-//       decoration: BoxDecoration(
-//         color: Colors.white,
-//         borderRadius: BorderRadius.circular(12),
-//         border: Border.all(color: const Color(0xFFE1E8EF)),
-//         boxShadow: [
-//           BoxShadow(
-//             color: Colors.black.withOpacity(0.05),
-//             blurRadius: 2,
-//             offset: const Offset(0, 1),
-//           ),
-//         ],
-//       ),
-//       child: Row(
-//         children: [
-//           // 1. الصورة (تأخذ مساحة محددة)
-//           CustomProductImageAvatar(
-//               image: product.imageUrl,
-//               fromNetwork: true,
-//               widthAndHeight: 120),
-//
-//           // 2. التفاصيل
-//           Expanded(
-//             child: Padding(
-//               padding: const EdgeInsets.all(8.0),
-//               child: Column(
-//                 crossAxisAlignment: CrossAxisAlignment.start,
-//                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                 children: [
-//                   CustomText(
-//                     // title: 'product title product ßtitle product title product title product title product title',
-//                     title: product.title,
-//                     fontWeight: FontWeight.w800,
-//                     size: Theme.of(context).textTheme.bodySmall!.fontSize!,
-//                     maxLines: 2,
-//                   ),
-//                   const SizedBox(height: 6),
-//                   CustomText(
-//                     title: product.price,
-//                     size: Theme.of(context).textTheme.bodySmall!.fontSize!,
-//                     fontWeight: FontWeight.w800,
-//                     color: const Color(0xFF2462EB),
-//                   ),
-//
-//                   const SizedBox(height: 10),
-//
-//                   // الموقع والوقت
-//                   Row(
-//                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//                     children: [
-//                       Row(
-//                         children: [
-//                           const Icon(Icons.location_on_outlined, size: 14, color: Color(0xFF63748A)),
-//                           const SizedBox(width: 4),
-//                           CustomText(
-//                             title: product.location,
-//                             size: Theme.of(context).textTheme.bodySmall!.fontSize! - 3,
-//                             color: const Color(0xFF63748A),
-//                           ),
-//                         ],
-//                       ),
-//                       CustomText(
-//                         title: product.timeAgo,
-//                         size: Theme.of(context).textTheme.bodySmall!.fontSize! - 3,
-//                         color: const Color(0xFF63748A),
-//                       ),
-//
-//                       IconButton(
-//                           onPressed: (){},
-//                           icon: Icon(Icons.favorite)
-//                       )
-//                     ],
-//                   ),
-//                 ],
-//               ),
-//             ),
-//           ),
-//         ],
-//       ),
-//     );
-//   }
-// }

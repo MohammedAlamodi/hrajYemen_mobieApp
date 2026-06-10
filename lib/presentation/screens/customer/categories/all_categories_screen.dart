@@ -43,8 +43,7 @@ class AllCategoriesScreen extends StatelessWidget {
                             horizontal: 16,
                             vertical: 8,
                           ),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2, // عمودين
                                 crossAxisSpacing: 12,
                                 mainAxisSpacing: 12,

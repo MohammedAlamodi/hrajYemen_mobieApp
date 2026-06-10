@@ -5,34 +5,52 @@ import 'package:ye_hraj/presentation/custom_widgets/get_amount_txt.dart';
 
 import '../../../../custom_widgets/custom_text.dart';
 
-enum AdStatus { active, sold }
+enum AdStatus { active, sold, blocked }
 
 class MyAdCard extends StatelessWidget {
   final String title;
   final double price;
+  final String priceCurrency;
   final String date;
   final int views;
   final String imageUrl;
-  final AdStatus status; // الحالة (نشط أو منتهي)
-  final VoidCallback? onEditTap; // أكشن التعديل
+  final AdStatus status;
+  final bool isBlocked;
+  final VoidCallback? onEditTap;
+  final VoidCallback? onRefTap;
+  final VoidCallback? onDeleteTap;
+  final VoidCallback? onToggleStatusTap;
 
   const MyAdCard({
     super.key,
     required this.title,
     required this.price,
     required this.date,
+    required this.priceCurrency,
+    required this.isBlocked,
     required this.views,
     required this.imageUrl,
     required this.status,
     this.onEditTap,
+    this.onRefTap,
+    this.onDeleteTap,
+    this.onToggleStatusTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    // تحديد لون الحالة والنص
     final bool isActive = status == AdStatus.active;
-    final statusColor = isActive ? AppColors.current.primary200: AppColors.current.error;
-    final statusText = isActive ? 'نشط' : 'مباع / منتهي';
+
+    final statusColor = isBlocked
+        ? AppColors.current.error
+          : isActive
+        ? Colors.green
+          : AppColors.current.error;
+    final statusText = isBlocked
+        ? 'تم حظره'
+        : isActive
+        ? 'نشط'
+        : 'مباع / منتهي';
 
     return Container(
       decoration: BoxDecoration(
@@ -72,24 +90,69 @@ class MyAdCard extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        CustomText(title: title, size: Theme.of(context).textTheme.bodySmall!.fontSize, fontWeight: FontWeight.w800, maxLines: 2),
-                        CustomText(title: '${getAmountWithoutDot(price.toString())} ر.ي', size: Theme.of(context).textTheme.bodySmall!.fontSize!, fontWeight: FontWeight.w800, color: AppColors.current.blue),
+                        CustomText(
+                          title: title,
+                          size: Theme.of(context).textTheme.bodySmall!.fontSize,
+                          fontWeight: FontWeight.w800,
+                          maxLines: 2,
+                        ),
                         Row(
                           children: [
-                            Icon(Icons.access_time, size: 14, color: AppColors.current.blackGrey),
+                            CustomText(
+                              title: getAmountWithoutDot(price.toString()),
+                              size:
+                                  Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall!.fontSize! +
+                                  1,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.current.primary,
+                            ),
+                            CustomText(
+                              title: ' ${priceCurrency} ',
+                              size:
+                                  Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall!.fontSize! -
+                                  5,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.current.grey,
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time,
+                              size: 14,
+                              color: AppColors.current.blackGrey,
+                            ),
                             const SizedBox(width: 4),
-                            CustomText(title: date, size: 12, color: AppColors.current.blackGrey),
+                            CustomText(
+                              title: date,
+                              size: 12,
+                              color: AppColors.current.blackGrey,
+                            ),
                             const Spacer(),
                             // حالة الإعلان (نص صغير)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: statusColor.withOpacity(0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: CustomText(
                                 title: statusText,
-                                color: statusColor, size: Theme.of(context).textTheme.bodySmall!.fontSize! - 3, fontWeight: FontWeight.bold,
+                                color: statusColor,
+                                size:
+                                    Theme.of(
+                                      context,
+                                    ).textTheme.bodySmall!.fontSize! -
+                                    3,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
                           ],
@@ -103,7 +166,7 @@ class MyAdCard extends StatelessWidget {
           ),
 
           // 2. الجزء السفلي (الأزرار) - يظهر فقط إذا كان الإعلان نشطاً
-          if (isActive) ...[
+          if (isActive && !isBlocked) ...[
             const Divider(height: 1, color: Color(0xFFE1E8EF)),
             Padding(
               padding: const EdgeInsets.all(12),
@@ -112,35 +175,40 @@ class MyAdCard extends StatelessWidget {
                   // زر إنهاء الإعلان (تم البيع)
                   Expanded(
                     child: _buildActionButton(
-                      text: 'تم البيع',
+                      text: 'تم البيع / إنهاء',
                       icon: Icons.check_circle_outline,
-                      color: AppColors.current.primary200,
-                      onTap: () {
-                        // كود تحويل الحالة إلى مباع
-                      },
+                      color: Colors.green,
+                      onTap: onToggleStatusTap ?? () {},
                     ),
                   ),
+
                   const SizedBox(width: 8),
 
                   // زر التعديل
-                  Expanded(
-                    child: _buildActionButton(
-                      text: 'تعديل',
-                      icon: Icons.edit_outlined,
-                      color: AppColors.current.blue,
-                      onTap: onEditTap ?? () {}, // تنفيذ التعديل
-                    ),
+                  _buildActionButton(
+                    text: 'تعديل',
+                    icon: Icons.edit_outlined,
+                    color: AppColors.current.blue,
+                    onTap: onEditTap ?? () {},
                   ),
+
                   const SizedBox(width: 8),
 
                   // زر الحذف (دائماً موجود أو حسب رغبتك)
                   _buildActionButton(
+                    icon: Icons.refresh,
+                    color: AppColors.current.primary,
+                    isIconOnly: true,
+                    onTap: onRefTap ?? () {},
+                  ),
+
+                  const SizedBox(width: 8),
+
+                  _buildActionButton(
                     icon: Icons.delete_outline,
                     color: AppColors.current.error,
                     isIconOnly: true,
-                    onTap: () {
-                      // كود الحذف
-                    },
+                    onTap: onDeleteTap ?? () {},
                   ),
                 ],
               ),
@@ -179,7 +247,12 @@ class MyAdCard extends StatelessWidget {
             Icon(icon, size: 18, color: color),
             if (!isIconOnly) ...[
               const SizedBox(width: 8),
-              CustomText(title: text!, size: 13.5, fontWeight: FontWeight.bold, color: color),
+              CustomText(
+                title: text!,
+                size: 13.5,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
             ],
           ],
         ),

@@ -1,4 +1,6 @@
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -16,36 +18,53 @@ class ChatViewModel extends ChangeNotifier {
   final String otherUserId;
   late String chatRoomId;
 
-  // المنتج المرفق (Context)
   Map<String, dynamic>? _attachedProductData;
   bool _showProductPreview = false;
 
   bool get showProductPreview => _showProductPreview;
   Map<String, dynamic>? get attachedProductData => _attachedProductData;
-  final String otherUserName;      // أضف هذا
+  final String otherUserName;
   final String otherUserImageUrl;
+
+  // 👈 متغير الستريم الجديد
+  Stream<QuerySnapshot>? messagesStream;
 
   ChatViewModel({
     required this.currentUserId,
     required this.senderProfileImageUrl,
     required this.senderName,
     required this.otherUserId,
-    required this.otherUserName,      // أضف هذا
+    required this.otherUserName,
     required this.otherUserImageUrl,
-    ProductModel? productContext, // نستقبل المنتج هنا
+    ProductModel? productContext,
   }) {
     chatRoomId = _repo.getChatRoomId(currentUserId, otherUserId);
 
-    // إذا جينا من صفحة منتج، نجهز البيانات
     if (productContext != null) {
       _attachedProductData = {
         'id': productContext.id,
         'title': productContext.title,
         'price': productContext.price,
         'image': productContext.images.isNotEmpty ? productContext.images.first.imageUrl : '',
-        'ref': productContext.id // مرجع للإعلان
+        'ref': productContext.id
       };
-      _showProductPreview = true; // إظهار الكارد فوق مربع النص
+      _showProductPreview = true;
+    }
+
+    // 👈 استدعاء المصادقة قبل جلب الرسائل
+    _initAuthAndMessages();
+  }
+
+  Future<void> _initAuthAndMessages() async {
+    try {
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+        debugPrint("✅ تم تسجيل الدخول المجهول لصفحة الشات");
+      }
+      messagesStream = _repo.getMessages(chatRoomId);
+      notifyListeners();
+    } catch (e) {
+      debugPrint("❌ خطأ في تهيئة الشات: $e");
     }
   }
 
@@ -119,5 +138,5 @@ class ChatViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  Stream get messagesStream => _repo.getMessages(chatRoomId);
+  // Stream get messagesStream => _repo.getMessages(chatRoomId);
 }

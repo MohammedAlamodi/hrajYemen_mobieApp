@@ -1,8 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../presentation/screens/admin_web/login/auth_wrapper.dart';
-import '../../presentation/screens/common/auth/forget_password_email/forget_password_email_view.dart';
-import '../../presentation/screens/common/auth/forget_password_email/forget_password_phone_view.dart';
-import '../../presentation/screens/common/auth/forget_password_email/otp_for_email.dart';
 import '../../presentation/screens/common/auth/login/login_view.dart';
 import '../../presentation/screens/common/auth/register/phoneVirev.dart';
 import '../../presentation/screens/common/auth/register/register_view.dart';
@@ -16,14 +13,10 @@ class MyRoutes {
     "/": (ctx) =>  kIsWeb ? AuthWrapper() : SplashScreen(),
     LoginScreen.routeName: (ctx) => const LoginScreen(),
     RegisterScreen.routeName: (ctx) => const RegisterScreen(),
-    OtpPage.routeName: (ctx) => OtpPage(),
-    ForgetPasswordEmailView.routeName: (ctx) => ForgetPasswordEmailView(),
-    OtpForEmailScreen.routeName: (ctx) => OtpForEmailScreen(),
+    // OtpPage.routeName: (ctx) => OtpPage(),
     HomeScreen.routeName: (ctx) => HomeScreen(),
     MainWrapperScreen.routeName: (ctx) => MainWrapperScreen(),
-    ForgetPasswordPhoneView.routeName: (ctx) => ForgetPasswordPhoneView(),
 
-// OnBoardingScreen.routeName: (ctx) => const OnBoardingScreen(),
   };
 
   static Route<BuildContext>? getRoutes(RouteSettings settings) {

@@ -160,19 +160,31 @@ class _ProductCardVerticalState extends State<ProductCardVertical> {
                       size: Theme.of(context).textTheme.bodySmall!.fontSize! - 2,
                     ),
                     const SizedBox(height: 4),
-                    CustomText(
-                      title: getAmountWithoutDot(widget.product.price.toString()),
-                      maxLines: 1,
-                      fontWeight: FontWeight.w800,
-                      size: Theme.of(context).textTheme.bodyMedium!.fontSize! - 3,
-                      color: const Color(0xFF2462EB),
+
+                    Row(
+                      children: [
+                        CustomText(
+                          title: getAmountWithoutDot(widget.product.price.toString()),
+                          size: Theme.of(context).textTheme.bodySmall!.fontSize! + 1, // تكبير بسيط للسعر
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.current.primary,
+                        ),
+                        CustomText(
+                          title: ' ${widget.product.priceCurrency} ',
+                          size: Theme.of(context).textTheme.bodySmall!.fontSize! - 5, // تكبير بسيط للسعر
+                          fontWeight: FontWeight.w800,
+                          color: AppColors.current.grey,
+                        ),
+                      ],
                     ),
+
+
                     const SizedBox(height: 8),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         CustomText(
-                          title: formatTimeAgo(widget.product.createdAt),
+                          title: formatTimeAgo(widget.product.updateAt),
                           color: const Color(0xFF63748A),
                           size: Theme.of(context).textTheme.bodyMedium!.fontSize! - 5,
                         ),

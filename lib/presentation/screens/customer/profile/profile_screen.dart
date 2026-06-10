@@ -156,7 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       context,
                       listen: false,
                     );
-                    vm.changeTab(0);
+                    vm.changeTab(1);
                     Navigator.push(
                       context,
                       MaterialPageRoute(

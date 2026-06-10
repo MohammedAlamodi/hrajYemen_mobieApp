@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:ye_hraj/presentation/screens/common/auth/forget_password_email/forgot_password_screen.dart';
+import 'package:ye_hraj/presentation/screens/customer/home/home_screen.dart';
 import '../../../../../configurations/data/api_services.dart';
 import '../../../../../configurations/helpers_functions.dart';
 import '../../../../../configurations/localization/i18n.dart';
@@ -10,10 +12,8 @@ import '../../../../custom_widgets/cust_svg_icons.dart';
 import '../../../../custom_widgets/custom_button.dart';
 import '../../../../custom_widgets/custom_text.dart';
 import '../../../../custom_widgets/custom_text_field.dart';
-import '../../../../custom_widgets/dialog/overlay_helper.dart';
 import '../../../../custom_widgets/laguage_icon.dart';
-import '../../../../custom_widgets/title_error_widget.dart';
-import '../forget_password_email/forget_password_email_view.dart';
+import '../../../customer/home/main_wrapper_screen.dart';
 import '../register/register_view.dart';
 import 'login_view_model.dart';
 
@@ -62,11 +62,9 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              SizedBox(
-                height: 40,
-              ),
+              SizedBox(height: 40),
               LanguageIcon(),
-              SizedBox(height: 20,),
+              SizedBox(height: 20),
               Expanded(
                 child: ListView(
                   // mainAxisAlignment: MainAxisAlignment.center,
@@ -82,29 +80,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       ],
                     ),
 
-                    SizedBox(height: 20,),
+                    SizedBox(height: 20),
 
                     CustomText(
                       title: S.of(context)!.login,
                       fontWeight: FontWeight.bold,
-                      size: Theme.of(context).textTheme.bodyLarge!.fontSize! +
-                          3,
+                      size:
+                          Theme.of(context).textTheme.bodyLarge!.fontSize! + 3,
                     ),
-                    SizedBox(
-                      height: 15,
-                    ),
+                    SizedBox(height: 15),
                     CustomText(
                       title: S.of(context)!.loginToYourAccounts,
                       color: Colors.black45,
-                      size: Theme.of(context).textTheme.bodySmall!.fontSize! -
-                          1,
+                      size:
+                          Theme.of(context).textTheme.bodySmall!.fontSize! - 1,
                     ),
-                    SizedBox(
-                      height: 10,
-                    ),
-                    SizedBox(
-                      height: 25,
-                    ),
+                    SizedBox(height: 10),
+                    SizedBox(height: 25),
 
                     CustomTextField(
                       textAlign: TextAlign.start,
@@ -118,7 +110,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         iconAssetString: IconAssets.email,
                       ),
                       hint:
-                          '${S.of(context)!.enter} ${S.of(context)!.yourEmail}',
+                          '${S.of(context)!.enter} ${S.of(context)!.userName} أو ${S.of(context)!.phone}',
                       errorText: loginViewModel.errorEmail,
                     ),
 
@@ -136,24 +128,23 @@ class _LoginScreenState extends State<LoginScreen> {
                       hint:
                           '${S.of(context)!.enter} ${S.of(context)!.password}',
                       errorText: loginViewModel.errorPass,
-                      prefixIcon: CusSvgIcons(iconAssetString:
-                      IconAssets.lock,
-                      ),
+                      prefixIcon: CusSvgIcons(iconAssetString: IconAssets.lock),
                       suffixIcon: GestureDetector(
-                          onTap: () => loginViewModel
-                              .changeObscureText(!loginViewModel.obscureText),
-                          child: CusSvgIcons(iconAssetString:
-                          loginViewModel.obscureText
-                                ? IconAssets.hidePassword
-                                : IconAssets.viewPassword,
-                            color: loginViewModel.password.isNotEmpty
-                                ? Colors.black
-                                : !loginViewModel.obscureText
-                                    ? Colors.black
-                                    : AppColors.current.grey,
-                            size: 25,
-                          ),
-                      )
+                        onTap: () => loginViewModel.changeObscureText(
+                          !loginViewModel.obscureText,
+                        ),
+                        child: CusSvgIcons(
+                          iconAssetString: loginViewModel.obscureText
+                              ? IconAssets.hidePassword
+                              : IconAssets.viewPassword,
+                          color: loginViewModel.password.isNotEmpty
+                              ? Colors.black
+                              : !loginViewModel.obscureText
+                              ? Colors.black
+                              : AppColors.current.grey,
+                          size: 25,
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 15),
@@ -165,8 +156,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         try {
                           loginViewModel.onLoginClick(context);
                         } catch (e) {
-                          debugPrint('************** error in login ${e.toString()}');
-                          // OverlayHelper.showErrorToast(context, e.toString().replaceAll('Exception: ', ''));
+                          debugPrint(
+                            '************** error in login ${e.toString()}',
+                          );
                         }
                       },
                       loading: loginViewModel.isLoading,
@@ -174,32 +166,86 @@ class _LoginScreenState extends State<LoginScreen> {
 
                     const SizedBox(height: 10),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        CustomText(
-                          title: S.of(context)!.youWantToHaveAccount,
-                          size:
-                              Theme.of(context).textTheme.bodySmall!.fontSize,
-                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            CustomText(
+                              title: S.of(context)!.youWantToHaveAccount,
+                              size: Theme.of(
+                                context,
+                              ).textTheme.bodySmall!.fontSize,
+                            ),
 
+                            Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.of(
+                                    context,
+                                  ).pushNamed(RegisterScreen.routeName);
+                                },
+                                child: CustomText(
+                                  title: S.of(context)!.createAnAccount,
+                                  size: Theme.of(
+                                    context,
+                                  ).textTheme.bodySmall!.fontSize,
+                                  // fontWeight: FontWeight.bold,
+                                  color: AppColors.current.primary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
                           child: GestureDetector(
                             onTap: () {
-                              Navigator.of(context)
-                                  .pushNamed(RegisterScreen.routeName);
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ForgotPasswordScreen(),
+                                ),
+                              );
                             },
                             child: CustomText(
-                              title: S.of(context)!.createAnAccount,
-                              size: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall!
-                                  .fontSize,
+                              title: S.of(context)!.forgetPassword,
+                              size: Theme.of(
+                                context,
+                              ).textTheme.bodySmall!.fontSize,
                               // fontWeight: FontWeight.bold,
                               color: AppColors.current.primary,
                             ),
                           ),
-                        )
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: GestureDetector(
+                            onTap: () {
+                              Navigator.pushNamedAndRemoveUntil(
+                                context,
+                                MainWrapperScreen.routeName,
+                                    (route) => false,
+                              );
+                            },
+                            child: CustomText(
+                              title: 'الدخول كزائر',
+                              size: Theme.of(
+                                context,
+                              ).textTheme.bodySmall!.fontSize,
+                              // fontWeight: FontWeight.bold,
+                              color: AppColors.current.primary,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 25),

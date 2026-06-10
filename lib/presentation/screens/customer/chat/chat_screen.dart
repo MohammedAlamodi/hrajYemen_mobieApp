@@ -64,7 +64,9 @@ class ChatScreen extends StatelessWidget {
                     children: [
                       // 1. قائمة الرسائل
                       Expanded(
-                        child: StreamBuilder(
+                        child: vm.messagesStream == null
+                            ? const Center(child: CircularProgressIndicator()) // 👈 مؤشر تحميل
+                            : StreamBuilder(
                           stream: vm.messagesStream,
                           builder: (context, AsyncSnapshot snapshot) {
                             if (!snapshot.hasData ||
@@ -293,7 +295,7 @@ class _MessageBubble extends StatelessWidget {
           maxWidth: MediaQuery.of(context).size.width * 0.75,
         ),
         decoration: BoxDecoration(
-          color: isMe ? const Color(0xFF2462EB) : Colors.white,
+          color: isMe ? AppColors.current.primary : Colors.white,
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(16),
             topRight: const Radius.circular(16),

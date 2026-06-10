@@ -51,7 +51,7 @@ class CategoryItem extends StatelessWidget {
       child: Icon(
         icon,
         // تغيير لون الأيقونة إذا كان القسم محدداً
-        color: isSelected ? AppColors.current.primary : const Color(0xFF2462EB),
+        color: isSelected ? AppColors.current.primary : AppColors.current.primary50,
       ),
     );
   }

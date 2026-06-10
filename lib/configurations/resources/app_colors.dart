@@ -63,9 +63,9 @@ class AppColors {
 // colors: [const Color(0xFF0D9488), const Color(0x000D9488)],
 // )
 var _defaultLightColors = AppColors(
-  primary: const Color(0xFF0D9387),
-  primary200: const Color(0xFF00C8B3),
-  primary50: const Color(0xFFE5F3FF),
+  primary: const Color(0xFFF85801),
+  primary200: const Color(0xFFFD955D),
+  primary50: const Color(0xFFFEB085),
 
   blackGrey: const Color(0xFF0F162A),
   // primary100: const Color(0xffFFCEB0),
@@ -85,8 +85,8 @@ var _defaultLightColors = AppColors(
 
   warning: const Color(0xffFF8800),
 
-  secondary: const Color(0xff454545),
+  secondary: const Color(0xff1F1F1F),
   appBackground: const Color(0xFFFBFBFB),
 
-  success: const Color(0xff0055f8),
+  success: const Color(0xffFA9055),
 );

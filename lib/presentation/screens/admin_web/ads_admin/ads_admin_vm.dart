@@ -18,7 +18,16 @@ class AdsAdminVM extends ChangeNotifier {
 
   String baseUrl = EndPointsStrings.baseUrl;
 
-  AdsAdminVM() {
+  final TextEditingController searchIdController = TextEditingController();
+
+  // متغيرات الفلترة
+  String? activeUserIdFilter;
+  String? activeStatusFilter;
+  int? searchAdId; // للبحث برقم الإعلان
+
+  AdsAdminVM({String? initialUserId, String? initialStatus}) {
+    activeUserIdFilter = initialUserId;
+    activeStatusFilter = initialStatus;
     _init();
   }
 
@@ -27,6 +36,35 @@ class AdsAdminVM extends ChangeNotifier {
       baseUrl += '/';
     }
     await fetchInitialProducts();
+  }
+
+  // 🔥 دالة البحث برقم الإعلان
+  void searchByAdId(String id) {
+    int? parsedId = int.tryParse(id);
+    if (parsedId != null) {
+      searchAdId = parsedId;
+      fetchInitialProducts();
+    }
+  }
+
+  // 🔥 مسح البحث
+  void clearSearch() {
+    searchIdController.clear();
+    searchAdId = null;
+    fetchInitialProducts();
+  }
+
+  // 🔥 تغيير فلتر الحالة (النشطة، المنتهية، المحظورة)
+  void changeStatusFilter(String? newStatus) {
+    if (activeStatusFilter == newStatus) return; // إذا ضغط على نفس الزر لا تفعل شيء
+    activeStatusFilter = newStatus;
+    fetchInitialProducts();
+  }
+
+  // 🔥 إزالة فلتر المستخدم المخصص
+  void clearUserFilter() {
+    activeUserIdFilter = null;
+    fetchInitialProducts();
   }
 
   String getFullImageUrl(String? path) {
@@ -38,21 +76,49 @@ class AdsAdminVM extends ChangeNotifier {
 
   // ==================== جلب الإعلانات ====================
 
+  // 🔥 دالة مساعدة لترجمة الفلتر النصي إلى (True/False)
+  void _applyStatusLogic(void Function(bool? isActiveParam, bool? isBlockedParam) onApply) {
+    bool? isActiveParam;
+    bool? isBlockedParam;
+
+    if (activeStatusFilter == 'active') {
+      isActiveParam = true;   // يجب أن يكون نشط
+      isBlockedParam = false; // ويجب ألا يكون محظوراً
+    } else if (activeStatusFilter == 'expired') {
+      isActiveParam = false;  // منتهي
+      // لا يهمنا إن كان محظوراً أو لا طالما هو منتهي
+    } else if (activeStatusFilter == 'blocked') {
+      isBlockedParam = true;  // محظور
+      // لا يهمنا إن كان نشط أو منتهي طالما هو محظور
+    }
+
+    onApply(isActiveParam, isBlockedParam);
+  }
+
   Future<void> fetchInitialProducts() async {
     isLoading = true;
     currentPage = 1;
     hasMoreData = true;
     notifyListeners();
 
-    // جلب أول 12 إعلان للوحة التحكم
-    products = await _repo.fetchProducts(page: currentPage, limit: 12);
+    // نترجم الفلتر ثم نستدعي الـ Repo
+    _applyStatusLogic((isActiveParam, isBlockedParam) async {
+      products = await _repo.fetchProducts(
+        page: currentPage,
+        limit: 12,
+        adId: searchAdId,
+        userId: activeUserIdFilter,
+        isActive: isActiveParam,    // 👈 نمرر قيمة النشط/المنتهي
+        isBlocked: isBlockedParam,  // 👈 نمرر قيمة الحظر
+      );
 
-    if (products.length < 12) {
-      hasMoreData = false;
-    }
+      if (products.length < 12) {
+        hasMoreData = false;
+      }
 
-    isLoading = false;
-    notifyListeners();
+      isLoading = false;
+      notifyListeners();
+    });
   }
 
   Future<void> loadMoreProducts() async {
@@ -62,16 +128,27 @@ class AdsAdminVM extends ChangeNotifier {
     notifyListeners();
 
     currentPage++;
-    final newProducts = await _repo.fetchProducts(page: currentPage, limit: 12);
 
-    if (newProducts.isEmpty) {
-      hasMoreData = false;
-    } else {
-      products.addAll(newProducts);
-    }
+    // نترجم الفلتر ثم نستدعي الـ Repo
+    _applyStatusLogic((isActiveParam, isBlockedParam) async {
+      final newProducts = await _repo.fetchProducts(
+        page: currentPage,
+        limit: 12,
+        adId: searchAdId,
+        userId: activeUserIdFilter,
+        isActive: isActiveParam,    // 👈 نمرر قيمة النشط/المنتهي
+        isBlocked: isBlockedParam,  // 👈 نمرر قيمة الحظر
+      );
 
-    isLoadingMore = false;
-    notifyListeners();
+      if (newProducts.isEmpty) {
+        hasMoreData = false;
+      } else {
+        products.addAll(newProducts);
+      }
+
+      isLoadingMore = false;
+      notifyListeners();
+    });
   }
 
   // ==================== تفاصيل الإعلان وحالته ====================
@@ -118,46 +195,4 @@ class AdsAdminVM extends ChangeNotifier {
       );
     }
   }
-
-  // Future<void> toggleAdStatus(BuildContext context, ProductModel product) async {
-  //   isActionLoading = true;
-  //   notifyListeners();
-  //
-  //   // 1. تحديد الحالة الجديدة (عكس الحالة الحالية)
-  //   // ملاحظة: تأكد أن المتغير في السيرفر اسمه isActive، أو عدله لـ status حسب المودل الخاص بكم
-  //   final newStatus = !(product.isActive ?? true);
-  //
-  //   // 2. تحويل المنتج الحالي بالكامل إلى Map
-  //   Map<String, dynamic> productData = product.toJson();
-  //
-  //   // 3. تعديل الحالة الجديدة داخل الـ Map
-  //   productData['isActive'] = newStatus; // 👈 غير اسم 'isActive' إذا كان السيرفر يستخدم اسماً آخر
-  //
-  //   // productData.remove('images');
-  //
-  //   // 4. إرسال المنتج بالكامل للسيرفر عبر الـ Repo الجديد
-  //   bool isSuccess = await _repo.updateProduct(
-  //     productId: product.id ?? 0,
-  //     data: productData,
-  //   );
-  //
-  //   isActionLoading = false;
-  //   notifyListeners();
-  //
-  //   // 5. التعامل مع النتيجة
-  //   if (isSuccess && context.mounted) {
-  //     Navigator.pop(context); // إغلاق نافذة التفاصيل
-  //     await fetchInitialProducts(); // تحديث القائمة لإظهار الحالة الجديدة
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(
-  //         content: Text(newStatus ? 'تم تفعيل الإعلان بنجاح' : 'تم إيقاف الإعلان بنجاح'),
-  //         backgroundColor: newStatus ? Colors.green : Colors.orange,
-  //       ),
-  //     );
-  //   } else if (context.mounted) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('حدث خطأ أثناء تغيير حالة الإعلان'), backgroundColor: Colors.red),
-  //     );
-  //   }
-  // }
 }

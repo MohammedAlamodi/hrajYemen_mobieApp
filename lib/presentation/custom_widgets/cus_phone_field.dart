@@ -40,6 +40,7 @@ class CusPhoneField extends StatelessWidget {
   ];
 
   final String? errorPhone;
+  final String? phoneHint;
   final String? phoneCuntry;
   final TextEditingController? controller;
   final Function(String?) onDropdownChanged;
@@ -48,6 +49,7 @@ class CusPhoneField extends StatelessWidget {
   const CusPhoneField({
     super.key,
     this.errorPhone,
+    this.phoneHint,
     this.phoneCuntry,
     this.controller,
     required this.onDropdownChanged,
@@ -57,7 +59,7 @@ class CusPhoneField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomTextField(
-      hint: '${S.of(context)!.enter} ${S.of(context)!.phone}',
+      hint: phoneHint ?? '${S.of(context)!.enter} ${S.of(context)!.phone}',
       errorText: errorPhone,
       controller: controller,
       title: S.of(context)!.phone,

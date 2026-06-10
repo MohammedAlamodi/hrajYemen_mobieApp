@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:ye_hraj/configurations/data/end_points_manager.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/model/user_model.dart';
+import 'package:ye_hraj/presentation/screens/customer/favorites/favorites_view_model.dart';
+import '../../../../configurations/localization/i18n.dart';
 import '../../../custom_widgets/Custom_header_bar.dart';
 import '../../../custom_widgets/custom_text.dart';
+import '../../common/common_view_model.dart';
 import '../home/custome_widgets/product_bottom_bar.dart';
 import 'custom_widgets/product_comments_section.dart';
 import 'product_details_view_model.dart';
@@ -18,6 +22,8 @@ class ProductDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    CommonViewModel commonViewModel = Provider.of<CommonViewModel>(context);
+
     return ChangeNotifierProvider(
       create: (_) => ProductDetailsViewModel()..loadProductDetails(productId),
       child: Scaffold(
@@ -32,174 +38,250 @@ class ProductDetailsScreen extends StatelessWidget {
             // --- حالة وجود البيانات (عرض الصفحة الحقيقية) ---
             final product = vm.productDetails;
 
-            return product!=null?
-            Stack(
-              children: [
-                CustomScrollView(
-                  slivers: [
-                    // Header
-                    const SliverToBoxAdapter(
-                      child: CustomHeaderBar(
-                        title: 'تفاصيل الإعلان',
-                        showSearch: false,
-                        onSearchChange: null,
-                      ),
-                    ),
-
-                    // Slider
-                    SliverToBoxAdapter(
-                      child: ProductImageSlider(
-                        images: product.images.map((img) => img.imageUrl).toList(),
-                        currentIndex: vm.currentImageIndex,
-                        onPageChanged: vm.onPageChanged,
-                      ),
-                    ),
-
-                    // Body Content
-                    SliverPadding(
-                      padding: const EdgeInsets.all(16.0),
-                      sliver: SliverList(
-                        delegate: SliverChildListDelegate([
-                          // السعر والعنوان
-                          CustomText(
-                            title: product.price.toString(),
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.current.primary,
-                          ),
-                          const SizedBox(height: 8),
-                          CustomText(
-                            title: product.title,
-                            fontWeight: FontWeight.w800,
-                            size: Theme.of(
-                              context,
-                            ).textTheme.bodySmall!.fontSize,
-                            color: AppColors.current.blackGrey,
-                          ),
-
-                          const SizedBox(height: 20),
-
-                          // الموقع
-                          _buildInfoBox(
-                            context,
-                            Icons.location_on_outlined,
-                            'المدينة :',
-                            '${product.cityName ?? ''} - ${product.regionName ?? ''}',
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // التفاصيل
-                          _buildSection(
-                            context: context,
-                            title: 'التفاصيل',
-                            child: Column(
-                              children: product.attributes.entries.map((e) {
-                                return _buildAttributeRow(
-                                  context,
-                                  e.key,
-                                  e.value,
-                                );
-                              }).toList(),
+            return product != null
+                ? Stack(
+                    children: [
+                      CustomScrollView(
+                        slivers: [
+                          // Header
+                          const SliverToBoxAdapter(
+                            child: CustomHeaderBar(
+                              title: 'تفاصيل الإعلان',
+                              showSearch: false,
+                              onSearchChange: null,
                             ),
                           ),
-                          const SizedBox(height: 16),
 
-                          // الوصف
-                          _buildSection(
-                            context: context,
-                            title: 'الوصف',
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
+                          // Slider
+                          SliverToBoxAdapter(
+                            child: ProductImageSlider(
+                              images: product.images
+                                  .map((img) => img.imageUrl)
+                                  .toList(),
+                              currentIndex: vm.currentImageIndex,
+                              onPageChanged: vm.onPageChanged,
+                            ),
+                          ),
+
+                          // Body Content
+                          SliverPadding(
+                            padding: const EdgeInsets.all(16.0),
+                            sliver: SliverList(
+                              delegate: SliverChildListDelegate([
+                                // السعر والعنوان
                                 CustomText(
-                                  title: product.description,
-                                  color: const Color(0xFF63748A),
-                                  textHeight: 1.6,
+                                  title: product.price.toString(),
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.current.primary,
+                                ),
+                                const SizedBox(height: 8),
+                                CustomText(
+                                  title: product.title,
+                                  fontWeight: FontWeight.w800,
                                   size: Theme.of(
                                     context,
                                   ).textTheme.bodySmall!.fontSize,
-                                  maxLines: vm.isDescriptionExpanded
-                                      ? 100
-                                      : 2,
+                                  color: AppColors.current.blackGrey,
                                 ),
-                                TextButton(
-                                  onPressed: vm.toggleDescription,
-                                  child: CustomText(
-                                    title: vm.isDescriptionExpanded
-                                        ? 'عرض أقل'
-                                        : 'قراءة المزيد',
-                                    size:
-                                        Theme.of(
-                                          context,
-                                        ).textTheme.bodySmall!.fontSize! -
-                                        2,
-                                    color: const Color(0xFF2462EB),
-                                    fontWeight: FontWeight.bold,
+
+                                const SizedBox(height: 20),
+
+                                // الموقع
+                                _buildInfoBox(
+                                  context,
+                                  Icons.location_on_outlined,
+                                  'المدينة :',
+                                  '${product.cityName ?? ''} - ${product.regionName ?? ''}',
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // التفاصيل
+                                _buildSection(
+                                  context: context,
+                                  title: 'التفاصيل',
+                                  child: Column(
+                                    children: product.attributes.entries.map((
+                                      e,
+                                    ) {
+                                      return _buildAttributeRow(
+                                        context,
+                                        e.key,
+                                        e.value,
+                                      );
+                                    }).toList(),
                                   ),
                                 ),
-                              ],
+                                const SizedBox(height: 16),
+
+                                // الوصف
+                                _buildSection(
+                                  context: context,
+                                  title: 'الوصف',
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      CustomText(
+                                        title: product.description,
+                                        color: const Color(0xFF63748A),
+                                        textHeight: 1.6,
+                                        size: Theme.of(
+                                          context,
+                                        ).textTheme.bodySmall!.fontSize,
+                                        maxLines: vm.isDescriptionExpanded
+                                            ? 100
+                                            : 2,
+                                      ),
+                                      TextButton(
+                                        onPressed: vm.toggleDescription,
+                                        child: CustomText(
+                                          title: vm.isDescriptionExpanded
+                                              ? 'عرض أقل'
+                                              : 'قراءة المزيد',
+                                          size:
+                                              Theme.of(
+                                                context,
+                                              ).textTheme.bodySmall!.fontSize! -
+                                              2,
+                                          color: const Color(0xFF2462EB),
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // البائع
+                                _buildSellerCard(
+                                  context: context,
+                                  sellerId: product.user?.id,
+                                  sellerName: commonViewModel.isLoggedIn
+                                      ? product.user?.fullName ?? '-'
+                                      : 'سجل دخول للعرض',
+                                  sellerPhone: commonViewModel.isLoggedIn
+                                      ? product.user?.phoneNumber ?? '-'
+                                      : 'سجل دخول لعرض بيانات البائع',
+                                  sellerImageUrl: product.user?.profileImageUrl,
+                                ),
+
+                                const SizedBox(height: 16),
+
+                                // استبدل _buildSectionContainer القديم الخاص بالتعليقات بهذا السطر:
+                                ProductCommentsSection(
+                                  comments: product.comments,
+                                ),
+                                // مسافة للبار السفلي
+                                const SizedBox(height: 100),
+                              ]),
                             ),
                           ),
-
-                          const SizedBox(height: 16),
-
-                          // البائع
-                          _buildSellerCard(
-                            context: context,
-                            sellerId: product.user?.id,
-                            sellerName: product.user?.fullName ?? '-',
-                            sellerPhone: product.user?.phoneNumber ?? '-',
-                            sellerImageUrl: product.user?.profileImageUrl,
-                          ),
-
-                          const SizedBox(height: 16),
-
-                          // استبدل _buildSectionContainer القديم الخاص بالتعليقات بهذا السطر:
-                          ProductCommentsSection(comments: product.comments),
-                          // مسافة للبار السفلي
-                          const SizedBox(height: 100),
-                        ]),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
 
-                // البار السفلي
-                Positioned(
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  child: ProductBottomBar(
-                    onCallTap: () {},
-                    onChatTap: () {
-                      vm.startChatWithSeller(context, product);
-                    },
-                    onWhatsAppTap: () {},
-                  ),
-                ),
-              ],
-            ) :
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const CustomText(
-                    title: 'حدث خطأ أثناء تحميل تفاصيل المنتج.',
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  const SizedBox(height: 10),
-                  ElevatedButton(
-                    onPressed: () => vm.loadProductDetails(productId),
-                    child: const CustomText(title: 'إعادة المحاولة'),
-                  ),
-                ],
-              )
-            );
-          }
+                      // البار السفلي
+                      Positioned(
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        child: ProductBottomBar(
+                          productId: product.id,
+                          onCallTap: () {
+                            if (product.user?.phoneNumber != null) {
+                              if (product.user!.phoneNumber!.contains('-')) {
+                                List phones = product.user!.phoneNumber!.split(
+                                  '-',
+                                );
+                                String fullPhone =
+                                    '${phones[0].trim()}${phones[1].trim()}';
+                                _callDriver(context, fullPhone);
+                              }
+                            }
+                          },
+                          onChatTap: () {
+                            vm.startChatWithSeller(context, product);
+                          },
+                          onShareTap: () {
+                            vm.shareProduct(context, product);
+                          },
+                          onFavoriteTap: () {
+                            FavoritesViewModel favoritesViewModel =
+                                Provider.of<FavoritesViewModel>(
+                                  context,
+                                  listen: false,
+                                );
+
+                            favoritesViewModel.toggleFavorite(product);
+                          },
+                        ),
+                      ),
+                    ],
+                  )
+                : Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CustomText(
+                          title: 'حدث خطأ أثناء تحميل تفاصيل المنتج.',
+                          color: Colors.red,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        const SizedBox(height: 10),
+                        ElevatedButton(
+                          onPressed: () => vm.loadProductDetails(productId),
+                          child: const CustomText(title: 'إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  );
+          },
         ),
       ),
     );
+  }
+
+  Future<void> _callDriver(BuildContext context, String phoneNumber) async {
+    String phone = phoneNumber.trim();
+
+    final Uri phoneUri = Uri(scheme: 'tel', path: phone);
+
+    try {
+      // تحقق أولًا من وجود تطبيق اتصال
+      if (await launchUrl(
+        Uri.parse('tel:+967738883773'),
+        mode: LaunchMode.externalApplication,
+      )) {
+        // استخدم LaunchMode.externalApplication لتفادي مشاكل Android 11+
+        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+        Navigator.of(context).pop();
+      } else {
+        debugPrint('No dialer app available');
+        // لا يوجد تطبيق اتصال على الجهاز
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: CustomText(
+              title: 'لا يمكن فتح تطبيق الاتصال للرقم $phone',
+              size: Theme.of(context).textTheme.bodySmall!.fontSize!,
+              color: Colors.white,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('Error launching phone dialer: $e');
+      // في حال حدث خطأ أثناء محاولة الإطلاق
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: CustomText(
+            title: 'حدث خطأ أثناء محاولة الاتصال بالرقم $phone',
+            size: Theme.of(context).textTheme.bodySmall!.fontSize!,
+            color: Colors.white,
+          ),
+        ),
+      );
+    }
   }
 
   // --- Widgets مساعدة للصفحة (نفس الكود السابق لترتيب الكود) ---
@@ -298,17 +380,19 @@ class ProductDetailsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CustomText(title: 'البائع',
-              size: Theme.of(context).textTheme.bodySmall!.fontSize,
-              fontWeight: FontWeight.bold
+          CustomText(
+            title: 'البائع',
+            size: Theme.of(context).textTheme.bodySmall!.fontSize,
+            fontWeight: FontWeight.bold,
           ),
-          SizedBox(height: 10,),
+          SizedBox(height: 10),
 
           Row(
             children: [
               CircleAvatar(
-                  backgroundImage:
-                  NetworkImage(sellerImageUrl ?? EndPointsStrings.emptyImageUrl),
+                backgroundImage: NetworkImage(
+                  sellerImageUrl ?? EndPointsStrings.emptyImageUrl,
+                ),
               ),
               const SizedBox(width: 10),
               SizedBox(height: 16),
@@ -321,7 +405,7 @@ class ProductDetailsScreen extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
 
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
 
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -334,12 +418,17 @@ class ProductDetailsScreen extends StatelessWidget {
                         child: Padding(
                           padding: const EdgeInsets.all(4.0),
                           child: Icon(
-                            Icons.phone_outlined, color: Colors.green,
-                            size: Theme.of(context).textTheme.bodySmall!.fontSize! + 3
+                            Icons.phone_outlined,
+                            color: Colors.green,
+                            size:
+                                Theme.of(
+                                  context,
+                                ).textTheme.bodySmall!.fontSize! +
+                                3,
                           ),
                         ),
                       ),
-                      SizedBox(width: 5,),
+                      SizedBox(width: 5),
                       Padding(
                         padding: const EdgeInsets.all(4.0),
                         child: CustomText(
@@ -353,7 +442,6 @@ class ProductDetailsScreen extends StatelessWidget {
                   ),
                 ],
               ),
-
             ],
           ),
         ],
@@ -405,8 +493,8 @@ class _ProductDetailsSkeletonState extends State<_ProductDetailsSkeleton>
       child: Column(
         children: [
           const CustomHeaderBar(
-              title: 'تفاصيل الإعلان',
-              showSearch: false,
+            title: 'تفاصيل الإعلان',
+            showSearch: false,
             onSearchChange: null,
           ),
           // هيدر وهمي

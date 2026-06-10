@@ -17,10 +17,13 @@ class ProductModel {
   final String? priceCurrency;
   final String? regionName;
   final String? userName;
-  // final String userId;
   final UserModel? user;
   final String? userProfileImageUrl;
-  // final UserModel? user;
+
+  final int? categoryId;
+  final int? subCategoryId;
+  final int? cityId;
+  final int? regionId;
 
   final bool isActive;
   final bool isBlocked;
@@ -49,6 +52,10 @@ class ProductModel {
     this.priceCurrency,
     this.user,
     this.userProfileImageUrl,
+    this.cityId,
+    this.categoryId,
+    this.subCategoryId,
+    this.regionId,
     // required this.userId,
 
     required this.isBlocked,
@@ -100,6 +107,10 @@ class ProductModel {
       cityName: json['cityName'],
       regionName: json['regionName'],
       userName: json['userName'],
+      regionId: json['regionId'],
+      categoryId: json['categoryId'],
+      subCategoryId: json['subCategoryId'],
+      cityId: json['cityId'],
       user: json['user'] != null ? UserModel.fromJson(json['user']) : null,
 
       isActive: json['isActive'] ?? true,
@@ -163,7 +174,7 @@ class ProductModel {
       if (categoryName != null) 'الفئة': categoryName!,
       if (subCategoryName != null) 'القسم': subCategoryName!,
       if (condition != null)
-        'الحالة': condition == "New" ? 'جديد' : 'مستعمل',
+        'الحالة': condition == "1" ? 'جديد' : 'مستعمل',
       if (cityName != null && regionName == null) 'الموقع': cityName!,
       if (price != null && price! > 0)
         'السعر': '${price!.toStringAsFixed(0)} ر.ي',

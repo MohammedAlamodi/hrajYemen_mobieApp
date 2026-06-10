@@ -165,6 +165,33 @@ class RegistrationViewRepository {
       return false;
     }
   }
+
+  Future<bool> resetPassword({required String phone, required String newPassword}) async {
+    try {
+      final response = await ApiService().dio.post(
+        EndPointsStrings.resetPasswordEndPoint,
+        data: {
+          "userId": phone,
+          "password": newPassword,
+        },
+      );
+
+      if (response.statusCode == 200) {
+        return true;
+      }
+      return false;
+
+    } on DioException catch (e) {
+      debugPrint("خطأ في إعادة تعيين كلمة المرور: ${e.message}");
+      if (e.response != null) {
+        debugPrint("تفاصيل السيرفر: ${e.response?.data}");
+      }
+      return false;
+    } catch (e) {
+      debugPrint("خطأ غير متوقع: $e");
+      return false;
+    }
+  }
 }
 
 extension on Map<String, dynamic> {

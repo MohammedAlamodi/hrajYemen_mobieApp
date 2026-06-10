@@ -5,6 +5,7 @@ import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_text_field.dart';
 import '../../../../custom_widgets/custom_avatar_widget.dart';
 import '../../../../custom_widgets/custom_text.dart';
+import 'banks_mobile_vm.dart';
 import 'payment_methods_view_model.dart';
 
 class PaymentMethodsScreen extends StatelessWidget {
@@ -12,8 +13,12 @@ class PaymentMethodsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => PaymentMethodsViewModel(),
+    // استخدمنا MultiProvider لتشغيل الاثنين معاً
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => PaymentMethodsViewModel()),
+        ChangeNotifierProvider(create: (_) => BanksMobileVM()),
+      ],
       child: Scaffold(
         backgroundColor: AppColors.current.appBackground,
         appBar: AppBar(
@@ -28,7 +33,7 @@ class PaymentMethodsScreen extends StatelessWidget {
           centerTitle: true,
         ),
         body: Consumer<PaymentMethodsViewModel>(
-          builder: (context, vm, child) {
+          builder: (context, paymentVm, child) {
             return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -37,22 +42,22 @@ class PaymentMethodsScreen extends StatelessWidget {
                   // --- 1. حاسبة العمولة ---
                   _buildSectionTitle('احسب عمولة إعلانك (1%)'),
                   CustomTextField(
-                    controller: vm.salePriceController,
+                    controller: paymentVm.salePriceController,
                     type: TextInputType.number,
-                    onChange: vm.calculateCommission,
+                    onChange: paymentVm.calculateCommission,
                     hint: 'أدخل قيمة بيع السلعة (مثال: 50,000)',
-                    contentPadding: EdgeInsets.symmetric(
+                    contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
                     ),
                   ),
 
-                  if (vm.calculatedCommission > 0)
+                  if (paymentVm.calculatedCommission > 0)
                     Padding(
                       padding: const EdgeInsets.only(top: 8.0, right: 8.0),
                       child: CustomText(
                         title:
-                            'العمولة المستحقة: ${vm.calculatedCommission.toStringAsFixed(1)} ريال',
+                        'العمولة المستحقة: ${paymentVm.calculatedCommission.toStringAsFixed(1)} ريال',
                         color: Colors.green,
                         fontWeight: FontWeight.bold,
                         size: 14,
@@ -62,40 +67,56 @@ class PaymentMethodsScreen extends StatelessWidget {
 
                   // --- 2. الحسابات البنكية ---
                   _buildSectionTitle('الحسابات المعتمدة للدفع'),
-                  SizedBox(height: 10),
+                  const SizedBox(height: 10),
 
-                  _buildBankAccountCard(
-                    context: context,
-                    bankName: 'بنك بن دول',
-                    accountName: 'حراج اليمن للإعلانات',
-                    accountNumber: '00012345678',
-                    imageUrl:
-                        'https://bindowalgroup.com/static/uploads/companies_logo/IMG_Bin_Dowal_Group_v0bYqKg1YBCDGDLdZvN0eiIPXFPElyWpSL3tp11c.png',
-                    iconPath: Icons.account_balance_wallet,
+                  Consumer<BanksMobileVM>(
+                    builder: (context, banksVm, _) {
+                      return Column(
+                        children: [
+                          // اللودينج الصغير في الأعلى عند المزامنة مع السيرفر
+                          if (banksVm.isServerLoading) ...[
+                            const LinearProgressIndicator(
+                              minHeight: 3,
+                              backgroundColor: Colors.transparent,
+                            ),
+                            const SizedBox(height: 10),
+                          ],
+
+                          // عرض الحسابات من السيرفر أو اللوكال
+                          banksVm.accounts.isEmpty && !banksVm.isServerLoading
+                              ? const Center(
+                            child: Padding(
+                              padding: EdgeInsets.all(16.0),
+                              child: Text(
+                                'لا توجد حسابات بنكية مضافة حالياً',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ),
+                          )
+                              : ListView.separated(
+                            // هذه الخصائص ضرورية لتجنب تعارض الـ Scroll مع SingleChildScrollView
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: banksVm.accounts.length,
+                            separatorBuilder: (context, index) => const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final bank = banksVm.accounts[index];
+
+                              // استخدام تصميمك المميز لعرض البيانات
+                              return _buildBankAccountCard(
+                                context: context,
+                                bankName: bank.name,
+                                accountNumber: bank.accountNumber,
+                                imageUrl: bank.imageUrl,
+                                iconPath: Icons.account_balance,
+                              );
+                            },
+                          ),
+                        ],
+                      );
+                    },
                   ),
 
-                  const SizedBox(height: 12),
-
-                  _buildBankAccountCard(
-                    context: context,
-                    bankName: ' صرافة العمقي',
-                    accountName: 'حراج اليمن للإعلانات',
-                    imageUrl:
-                        'https://scontent.fkul10-2.fna.fbcdn.net/v/t39.30808-6/494039041_1070032821821822_4217568367567705321_n.jpg?_nc_cat=100&ccb=1-7&_nc_sid=1d70fc&_nc_ohc=sgn9xgpGgHwQ7kNvwEutpSR&_nc_oc=Adk3ICW7Qr1jZKeIfMV2aE96tV7Qmno6ZYLZRhf7a8KNh0w5j1h5Llgm6xI9kSQjL1KpcPIUTCrS5-Qi3p8GjNzD&_nc_zt=23&_nc_ht=scontent.fkul10-2.fna&_nc_gid=Ej5nkMvEeqX0TiirlZHD3A&_nc_ss=8&oh=00_Afv8fMZj0AHSnKTiMSaT0e56AiyHV8PXHQVz7rt7-RSEqA&oe=69AA5981',
-                    accountNumber: '777000000',
-                    iconPath: Icons.phone_android,
-                  ),
-                  const SizedBox(height: 12),
-
-                  _buildBankAccountCard(
-                    context: context,
-                    bankName: 'بنك الكريمي',
-                    accountName: 'حراج اليمن للإعلانات',
-                    accountNumber: '123456789',
-                    imageUrl:
-                        'https://scontent.fkul10-2.fna.fbcdn.net/v/t39.30808-6/515509762_24046243518325951_629679767048178728_n.jpg?stp=dst-jpg_s1080x2048_tt6&_nc_cat=111&ccb=1-7&_nc_sid=7b2446&_nc_ohc=34C1tYpuaZ0Q7kNvwGuAxEG&_nc_oc=AdlRqwFImE4Oli_a-CQFTFXm-ASWTwmOvT6ElyfELo-pOSCMbCPGwbczU5iYgvBLRrBeD4T93-9c8l7x2-3RxqkR&_nc_zt=23&_nc_ht=scontent.fkul10-2.fna&_nc_gid=rKY0dNWeTjCUTR4C57n52A&_nc_ss=8&oh=00_AfuOb7Q-ScmZ4Ut_2dFfGQx5r3bT7fJNI-Kc1ob3TPk95A&oe=69AA6D66',
-                    iconPath: Icons.account_balance,
-                  ),
                   const SizedBox(height: 32),
 
                   // --- 3. تعليمات ما بعد الدفع ---
@@ -141,7 +162,6 @@ class PaymentMethodsScreen extends StatelessWidget {
                             // مثال: launchUrl(Uri.parse("https://wa.me/967777000000"));
                           },
                           icon: const Icon(Icons.wechat, color: Colors.white),
-                          // يفضل استخدام أيقونة واتساب إذا توفرت
                           label: const Text(
                             'إرسال السند عبر الواتساب',
                             style: TextStyle(
@@ -152,7 +172,6 @@ class PaymentMethodsScreen extends StatelessWidget {
                           ),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF25D366),
-                            // لون الواتساب الرسمي
                             elevation: 0,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -188,7 +207,6 @@ class PaymentMethodsScreen extends StatelessWidget {
   Widget _buildBankAccountCard({
     required BuildContext context,
     required String bankName,
-    required String accountName,
     required String accountNumber,
     required String? imageUrl,
     required IconData iconPath,
@@ -208,7 +226,7 @@ class PaymentMethodsScreen extends StatelessWidget {
               color: Color(0xFFF3F4F6),
               shape: BoxShape.circle,
             ),
-            child: imageUrl != null
+            child: (imageUrl != null && imageUrl.isNotEmpty)
                 ? CustomAvatarWidget(imageUrl: imageUrl, size: 28, iconSize: 23)
                 : Icon(iconPath, color: const Color(0xFF63748A), size: 24),
           ),
@@ -223,8 +241,8 @@ class PaymentMethodsScreen extends StatelessWidget {
                   size: 15,
                 ),
                 const SizedBox(height: 4),
-                CustomText(title: accountName, color: Colors.grey, size: 12),
-                const SizedBox(height: 4),
+                // CustomText(title: accountName, color: Colors.grey, size: 12),
+                // const SizedBox(height: 4),
                 CustomText(
                   title: accountNumber,
                   color: const Color(0xFF2462EB),

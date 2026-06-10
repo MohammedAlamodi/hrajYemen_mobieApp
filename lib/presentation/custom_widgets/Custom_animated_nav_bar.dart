@@ -47,7 +47,7 @@ class CustomAnimatedNavBar extends StatelessWidget {
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: const Color(0xFF2462EB), // اللون الأزرق الرئيسي
+                  color: AppColors.current.success, // اللون الأزرق الرئيسي
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(

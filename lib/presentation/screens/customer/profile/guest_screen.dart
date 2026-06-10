@@ -22,12 +22,12 @@ class GuestScreen extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(color: const Color(0xFFEEF6FF), shape: BoxShape.circle),
-                child: const Icon(Icons.person_outline, size: 60, color: Color(0xFF2462EB)),
+                decoration: BoxDecoration(color: AppColors.current.primary50, shape: BoxShape.circle),
+                child: Icon(Icons.person_outline, size: 60, color: AppColors.current.primary),
               ),
               const SizedBox(height: 24),
               const CustomText(
-                title: 'أهلاً بك يا زائر',
+                title: 'نسعد بإنضمامك',
                 size: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -45,7 +45,7 @@ class GuestScreen extends StatelessWidget {
                     MaterialPageRoute(builder: (context) => LoginScreen()),
                   );
                 }, // هنا تفتح صفحة اللوجن الحقيقية
-                btnColor: const Color(0xFF2462EB),
+                btnColor: AppColors.current.primary,
                 btnTextColor: Colors.white,
               ),
             ],

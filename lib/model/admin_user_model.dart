@@ -11,7 +11,8 @@ class AdminUserModel {
   final String? regionName;
   final int numberOfProducts;
   final int numberOfExpireProducts;
-  final bool lockoutEnabled;
+  bool lockoutEnabled;
+  bool isBlocked;
   final int userType;
 
   AdminUserModel({
@@ -25,6 +26,7 @@ class AdminUserModel {
     this.createdAt,
     this.cityName,
     this.regionName,
+    required this.isBlocked,
     required this.numberOfProducts,
     required this.numberOfExpireProducts,
     required this.lockoutEnabled,
@@ -41,6 +43,7 @@ class AdminUserModel {
       profileImageUrl: json['profileImageUrl'],
       bio: json['bio'],
       createdAt: json['createdAt'],
+      isBlocked: json['isBlocked'],
       cityName: json['cityName'],
       regionName: json['regionName'],
       numberOfProducts: json['numberOfProducts'] ?? 0,

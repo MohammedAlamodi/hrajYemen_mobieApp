@@ -19,4 +19,8 @@ class EndPointsStrings {
   static const wityEndPoint = "";
 
   static String get postCommentEndPoint => 'api/ProductComments';
+
+  static String get resetPasswordEndPoint => 'api/Admin/ForgetPassword';
+
+  static String get banksEndPoint => 'api/Banks';
 }

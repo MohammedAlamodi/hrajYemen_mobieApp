@@ -8,6 +8,7 @@ import 'package:ye_hraj/presentation/screens/common/common_view_model.dart';
 import '../../../../../model/user_profile_model.dart';
 import '../../../../custom_widgets/custom_bottom_sheet/custom_bottom_sheet_list.dart';
 import '../../../../custom_widgets/custom_text.dart';
+import 'phoneVirev.dart';
 import 'register_view_model.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -45,10 +46,45 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+  // 🔥 الانتقال لصفحة تأكيد الـ OTP
+  Future<void> _goToOtpScreen() async {
+    // 1) تحقق من الفالديشن
+    if (!registerViewModel.validateRegistrationForm(context)) return;
+
+    // 2) حالة التعديل بدون تغيير الرقم → سجّل مباشرة بدون OTP
+    if (widget.isEditing && registerViewModel.isPhoneVerified) {
+      await registerViewModel.updateProfile(context);
+      return;
+    }
+
+    // 3) صفر حالة الـ OTP ثم انتقل + ابدأ الإرسال بالتوازي
+    registerViewModel.resetOtpState();
+
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChangeNotifierProvider.value(
+          value: registerViewModel,
+          child: OtpVerificationScreen(isEditing: widget.isEditing),
+        ),
+      ),
+    );
+
+    // 4) أرسل الـ OTP بعد فتح الصفحة (الصفحة الجديدة ستعرض حالة "جاري الإرسال")
+    registerViewModel.sendOtp(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     commonViewModel = Provider.of<CommonViewModel>(context);
     registerViewModel = Provider.of<RegisterViewModel>(context);
+
+    // عنوان الزر السفلي
+    final bool editingUnchangedPhone =
+        widget.isEditing && registerViewModel.isPhoneVerified;
+    final String bottomBtnTitle = editingUnchangedPhone
+        ? 'حفظ التعديلات'
+        : 'التالي';
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -82,33 +118,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         shape: BoxShape.circle,
                         image: registerViewModel.personalPhoto != null
                             ? DecorationImage(
-                                image: FileImage(
-                                  registerViewModel.personalPhoto!,
-                                ),
-                                fit: BoxFit.cover,
-                              )
+                          image: FileImage(
+                            registerViewModel.personalPhoto!,
+                          ),
+                          fit: BoxFit.cover,
+                        )
                             : (widget.isEditing &&
-                                  registerViewModel.existingImageUrl != null &&
-                                  registerViewModel
-                                      .existingImageUrl!
-                                      .isNotEmpty)
+                            registerViewModel.existingImageUrl !=
+                                null &&
+                            registerViewModel
+                                .existingImageUrl!.isNotEmpty)
                             ? DecorationImage(
-                                image: NetworkImage(
-                                  registerViewModel.existingImageUrl!,
-                                ),
-                                fit: BoxFit.cover,
-                              )
+                          image: NetworkImage(
+                            registerViewModel.existingImageUrl!,
+                          ),
+                          fit: BoxFit.cover,
+                        )
                             : null,
                       ),
-                      child:
-                          (registerViewModel.personalPhoto == null &&
-                              (registerViewModel.existingImageUrl == null ||
-                                  registerViewModel.existingImageUrl!.isEmpty))
+                      child: (registerViewModel.personalPhoto == null &&
+                          (registerViewModel.existingImageUrl == null ||
+                              registerViewModel.existingImageUrl!.isEmpty))
                           ? const Icon(
-                              Icons.person,
-                              size: 50,
-                              color: Colors.white,
-                            )
+                        Icons.person,
+                        size: 50,
+                        color: Colors.white,
+                      )
                           : null,
                     ),
                     Container(
@@ -131,7 +166,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 20),
 
             if (!widget.isEditing) ...[
-              // --- 2. الحقول الأساسية ---
               _buildLabel(context, 'اسم المستخدم', isRequired: true),
               _buildTextField(
                 controller: registerViewModel.emailController,
@@ -174,126 +208,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             const SizedBox(height: 10),
 
             // ==========================================
-            // 🔥 قسم رقم الهاتف و الـ OTP
+            // 🔥 رقم الهاتف فقط (بدون OTP داخل الصفحة)
             // ==========================================
             // _buildLabel(context, 'رقم الهاتف', isRequired: true),
             CusPhoneField(
               onDropdownChanged: registerViewModel.setPhoneCountryCode,
               phoneCuntry: registerViewModel.phoneCuntry,
-              onTextChanged: registerViewModel
-                  .setPhoneNumber, // 🔥 حذفنا الويدجت المكرر تحتها
-            ),
-
-            AnimatedSize(
-              duration: const Duration(milliseconds: 300),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // أ: زر (تأكيد رقم هاتفك)
-                  if (!registerViewModel.isPhoneVerified &&
-                      registerViewModel.phoneController.isNotEmpty &&
-                      registerViewModel.phoneController != '7********' &&
-                      !registerViewModel.isOtpSent)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0, right: 4.0),
-                      child: GestureDetector(
-                        onTap: registerViewModel.isOtpLoading
-                            ? null
-                            : () => registerViewModel.sendOtp(context),
-                        child: registerViewModel.isOtpLoading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : CustomText(
-                                title: 'تأكيد رقم هاتفك',
-                                color: AppColors.current.primary,
-                                fontWeight: FontWeight.bold,
-                                size: 14,
-                              ),
-                      ),
-                    ),
-
-                  // ب: مربع الـ OTP وزر التحقق
-                  if (registerViewModel.isOtpSent &&
-                      !registerViewModel.isPhoneVerified)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 12.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            flex: 2,
-                            child: _buildTextField(
-                              controller: registerViewModel.otpController,
-                              hint: 'أدخل الرمز (6 أرقام)',
-                              keyboardType: TextInputType.number,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            flex: 1,
-                            child: SizedBox(
-                              height: 50,
-                              child: ElevatedButton(
-                                onPressed: registerViewModel.isOtpLoading
-                                    ? null
-                                    : () =>
-                                          registerViewModel.verifyOtp(context),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF25D366),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: registerViewModel.isOtpLoading
-                                    ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          color: Colors.white,
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const CustomText(
-                                        title: 'تحقق',
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // ج: تم تأكيد الرقم بنجاح
-                  if (registerViewModel.isPhoneVerified)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8.0, right: 4.0),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.check_circle,
-                            color: Colors.green,
-                            size: 18,
-                          ),
-                          const SizedBox(width: 6),
-                          CustomText(
-                            title: 'تم تأكيد الرقم بنجاح',
-                            color: Colors.green,
-                            fontWeight: FontWeight.bold,
-                            size: 14,
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  SizedBox(height: 10),
-                ],
-              ),
+              onTextChanged: registerViewModel.setPhoneNumber,
+              phoneHint: registerViewModel.phoneController != '7********' ? registerViewModel.phoneController : null,
+              // controller: TextEditingController(text: registerViewModel.phoneController),
             ),
 
             const SizedBox(height: 10),
@@ -311,16 +234,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               bottomSheetTitle: 'اختر المدينة',
               hint: registerViewModel.selectedCity?.name ?? 'اختر المدينة',
               listOfItems: commonViewModel.cities,
-              onItemTap:
-                  (
-                    String? name,
-                    int? id, {
+              onItemTap: (
+                  String? name,
+                  int? id, {
                     int? indexOfSelectedItem,
                     dynamic selectedItem,
                   }) {
-                    Navigator.pop(context);
-                    registerViewModel.setCity(context, id);
-                  },
+                Navigator.pop(context);
+                registerViewModel.setCity(context, id);
+              },
             ),
             const SizedBox(height: 10),
 
@@ -330,40 +252,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
               hint: registerViewModel.selectedRegion?.name ?? 'اختر المنطقة',
               listOfItems: commonViewModel.regions,
               isLoading: commonViewModel.isLoadingRegion,
-              onItemTap:
-                  (
-                    String? name,
-                    int? id, {
+              onItemTap: (
+                  String? name,
+                  int? id, {
                     int? indexOfSelectedItem,
                     dynamic selectedItem,
                   }) {
-                    Navigator.pop(context);
-                    registerViewModel.setRegion(context, id);
-                  },
+                Navigator.pop(context);
+                registerViewModel.setRegion(context, id);
+              },
             ),
 
             const SizedBox(height: 20),
 
-            // --- 4. زر الحفظ / التسجيل ---
+            // --- 4. زر "التالي" أو "حفظ التعديلات" (في حال تعديل بدون تغيير الرقم) ---
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                // 🔥 تم إصلاح الشرط: الزر معطل إذا كان قيد التحميل، أو إذا كان الرقم لم يتم تأكيده
                 onPressed:
-                    (registerViewModel.isLoading ||
-                        !registerViewModel.isPhoneVerified)
-                    ? null
-                    : () {
-                        if (widget.isEditing) {
-                          registerViewModel.updateProfile(context);
-                        } else {
-                          registerViewModel.register(context);
-                        }
-                      },
+                registerViewModel.isLoading ? null : _goToOtpScreen,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor:
-                      (!registerViewModel.isPhoneVerified ||
-                          registerViewModel.isLoading)
+                  backgroundColor: registerViewModel.isLoading
                       ? Colors.grey
                       : AppColors.current.primary,
                   padding: const EdgeInsets.symmetric(vertical: 16),
@@ -374,20 +283,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 child: registerViewModel.isLoading
                     ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2.5,
-                        ),
-                      )
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    color: Colors.white,
+                    strokeWidth: 2.5,
+                  ),
+                )
                     : CustomText(
-                        title: widget.isEditing
-                            ? 'حفظ التعديلات'
-                            : 'تسجيل حساب',
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  title: bottomBtnTitle,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ],
@@ -397,10 +304,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildLabel(
-    BuildContext context,
-    String text, {
-    bool isRequired = false,
-  }) {
+      BuildContext context,
+      String text, {
+        bool isRequired = false,
+      }) {
     return Padding(
       padding: const EdgeInsets.only(top: 4.0),
       child: Row(
@@ -414,11 +321,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
           isRequired
               ? const Text(' *', style: TextStyle(color: Colors.red))
               : CustomText(
-                  title: '  (إختياري)  ',
-                  size: Theme.of(context).textTheme.bodySmall!.fontSize! - 3,
-                  fontWeight: FontWeight.w800,
-                  color: Colors.grey,
-                ),
+            title: '  (إختياري)  ',
+            size: Theme.of(context).textTheme.bodySmall!.fontSize! - 3,
+            fontWeight: FontWeight.w800,
+            color: Colors.grey,
+          ),
         ],
       ),
     );

@@ -1,6 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:ye_hraj/configurations/resources/app_colors.dart';
+import '../../../../configurations/resources/app_colors.dart';
 import '../../../../model/product_model.dart';
 import '../../../custom_widgets/Custom_header_bar.dart';
 import '../../../custom_widgets/custom_text.dart';
@@ -25,15 +26,16 @@ class _EditAdScreenState extends State<EditAdScreen> {
     super.initState();
   }
 
-
   void _init() {
     viewModel = Provider.of<MyAdViewModel>(context, listen: false);
-    viewModel.initControllers(widget.product); // تهيئة الكنترولرز بالبيانات الحالية
+    viewModel.initControllers(
+      widget.product,
+    ); // تهيئة الكنترولرز بالبيانات الحالية
   }
 
   @override
   Widget build(BuildContext context) {
-    viewModel= Provider.of<MyAdViewModel>(context);
+    viewModel = Provider.of<MyAdViewModel>(context);
 
     return Scaffold(
       backgroundColor: AppColors.current.appBackground,
@@ -63,40 +65,48 @@ class _EditAdScreenState extends State<EditAdScreen> {
                     // السعر
                     _buildLabel('السعر'),
 
-
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 1. حقل إدخال السعر (يأخذ مساحة أكبر)
                         Expanded(
-                          flex: 3,
-                          child: _buildTextField(vm.priceController, isNumber: true),
-
+                          flex: 5,
+                          child: _buildTextField(
+                            vm.priceController,
+                            isNumber: true,
+                          ),
                         ),
+
                         const SizedBox(width: 10),
 
                         // 2. قائمة اختيار العملة (Dropdown)
                         Expanded(
-                          flex: 1,
+                          flex: 2,
                           child: Container(
                             height: 50, // نفس ارتفاع حقل النص تقريباً
                             padding: const EdgeInsets.symmetric(horizontal: 12),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF9FAFC), // لون خلفية خفيف
-                              border: Border.all(color: const Color(0xFFE1E8EF)),
+                              border: Border.all(
+                                color: const Color(0xFFE1E8EF),
+                              ),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: DropdownButtonHideUnderline(
                               child: DropdownButton<String>(
-                                value: vm.priceCurrency,
+                                value: vm.currencies.contains(vm.priceCurrency)
+                                    ? vm.priceCurrency
+                                    : vm.currencies.first,
                                 isExpanded: true,
-                                icon: const Icon(Icons.keyboard_arrow_down, color: Colors.grey),
+                                icon: const Icon(
+                                  Icons.keyboard_arrow_down,
+                                  color: Colors.grey,
+                                ),
                                 items: vm.currencies.map((String currency) {
                                   return DropdownMenuItem<String>(
                                     value: currency,
                                     child: CustomText(
                                       title: currency,
-                                      size: Theme.of(context).textTheme.bodySmall!.fontSize! - 1,
+                                      size: Theme.of(context).textTheme.bodySmall!.fontSize! - 5,
                                       fontWeight: FontWeight.bold,
                                     ),
                                   );
@@ -123,24 +133,55 @@ class _EditAdScreenState extends State<EditAdScreen> {
 
                     const SizedBox(height: 24),
 
-                    // صور الإعلان
                     _buildLabel('صور الإعلان'),
                     const SizedBox(height: 12),
                     SizedBox(
-                      height: 100,
-                      child: ListView.separated(
+                      height: 110,
+                      child: ListView(
                         scrollDirection: Axis.horizontal,
-                        itemCount: widget.product.images.length + 1, // +1 لزر الإضافة
-                        separatorBuilder: (c, i) => const SizedBox(width: 12),
-                        itemBuilder: (context, index) {
-                          if (index == 0) {
-                            return _buildAddImageButton();
-                          }
-                          // عرض الصور الموجودة
-                          return _buildImageItem(widget.product.images[index - 1].imageUrl);
-                        },
+                        children: [
+                          // زر إضافة صور جديدة
+                          _buildAddImageButton(() => vm.pickNewImages()),
+                          const SizedBox(width: 12),
+
+                          // عرض الصور القديمة (التي لم تُحذف بعد)
+                          ...widget.product.images
+                              .where(
+                                (img) => !vm.deletedImageIds.contains(img.id),
+                              ).map((img) => _buildImageItem(
+                                  url: img.imageUrl,
+                                  onDelete: () =>
+                                      vm.removeExistingImage(img.id),
+                                ),),
+
+                          // عرض الصور الجديدة المختارة من الجهاز
+                          ...vm.newImages.asMap().entries.map(
+                            (entry) => _buildImageItem(
+                              file: entry.value,
+                              onDelete: () => vm.removeNewImage(entry.key),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
+
+                    // _buildLabel('صور الإعلان'),
+                    // const SizedBox(height: 12),
+                    // SizedBox(
+                    //   height: 100,
+                    //   child: ListView.separated(
+                    //     scrollDirection: Axis.horizontal,
+                    //     itemCount: widget.product.images.length + 1, // +1 لزر الإضافة
+                    //     separatorBuilder: (c, i) => const SizedBox(width: 12),
+                    //     itemBuilder: (context, index) {
+                    //       if (index == 0) {
+                    //         return _buildAddImageButton();
+                    //       }
+                    //       // عرض الصور الموجودة
+                    //       return _buildImageItem(widget.product.images[index - 1].imageUrl);
+                    //     },
+                    //   ),
+                    // ),
                   ],
                 );
               },
@@ -154,7 +195,69 @@ class _EditAdScreenState extends State<EditAdScreen> {
     );
   }
 
-  // --- Widgets مساعدة ---
+  Widget _buildAddImageButton(VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        width: 94,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFE1E8EF), width: 2),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.add_a_photo_outlined,
+            color: AppColors.current.primary,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageItem({
+    String? url,
+    File? file,
+    required VoidCallback onDelete,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(left: 12),
+      width: 94,
+      child: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFE1E8EF)),
+              image: DecorationImage(
+                image: file != null
+                    ? FileImage(file)
+                    : NetworkImage(url!) as ImageProvider,
+                fit: BoxFit.cover,
+              ),
+            ),
+          ),
+          // زر الحذف (X)
+          Positioned(
+            top: 4,
+            right: 4,
+            child: GestureDetector(
+              onTap: onDelete,
+              child: Container(
+                padding: const EdgeInsets.all(2),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.close, size: 16, color: Colors.white),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildLabel(String text) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
@@ -167,7 +270,12 @@ class _EditAdScreenState extends State<EditAdScreen> {
     );
   }
 
-  Widget _buildTextField(TextEditingController controller, {String? suffix, int maxLines = 1, bool isNumber = false}) {
+  Widget _buildTextField(
+    TextEditingController controller, {
+    String? suffix,
+    int maxLines = 1,
+    bool isNumber = false,
+  }) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -178,40 +286,22 @@ class _EditAdScreenState extends State<EditAdScreen> {
         controller: controller,
         maxLines: maxLines,
         keyboardType: isNumber ? TextInputType.number : TextInputType.text,
-        style: const TextStyle(fontFamily: 'Tajawal', fontSize: 14, color: Color(0xFF0F162A)),
+        style: const TextStyle(
+          fontFamily: 'Expo Arabic',
+          fontSize: 14,
+          color: Color(0xFF0F162A),
+        ),
         decoration: InputDecoration(
           border: InputBorder.none,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
           suffixText: suffix,
-          suffixStyle: const TextStyle(fontFamily: 'Tajawal', color: Color(0xFF63748A)),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAddImageButton() {
-    return Container(
-      width: 94,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE1E8EF), width: 2),
-      ),
-      child: const Center(
-        child: Icon(Icons.add_a_photo_outlined, color: Color(0xFF2462EB)),
-      ),
-    );
-  }
-
-  Widget _buildImageItem(String url) {
-    return Container(
-      width: 94,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE1E8EF)),
-        image: DecorationImage(
-          image: NetworkImage(url),
-          fit: BoxFit.cover,
+          suffixStyle: const TextStyle(
+            fontFamily: 'Expo Arabic',
+            color: Color(0xFF63748A),
+          ),
         ),
       ),
     );
@@ -222,8 +312,17 @@ class _EditAdScreenState extends State<EditAdScreen> {
       padding: const EdgeInsets.all(16),
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.only(topLeft: Radius.circular(30), topRight: Radius.circular(30)),
-        boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: Offset(0, -5))],
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30),
+          topRight: Radius.circular(30),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 10,
+            offset: Offset(0, -5),
+          ),
+        ],
       ),
       child: Consumer<MyAdViewModel>(
         builder: (context, vm, child) {
@@ -235,25 +334,48 @@ class _EditAdScreenState extends State<EditAdScreen> {
                   onPressed: () => Navigator.pop(context),
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: Color(0xFFE1E8EF), width: 2),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
-                  child: CustomText(title: 'إلغاء', color: Color(0xFF0F162A), fontWeight: FontWeight.bold, size: Theme.of(context).textTheme.bodySmall!.fontSize,),
+                  child: CustomText(
+                    title: 'إلغاء',
+                    color: Color(0xFF0F162A),
+                    fontWeight: FontWeight.bold,
+                    size: Theme.of(context).textTheme.bodySmall!.fontSize,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),
               // زر حفظ
               Expanded(
                 child: ElevatedButton(
-                  onPressed: vm.isEditingLoading ? null : () => vm.saveChanges(context),
+                  onPressed: vm.isEditingLoading
+                      ? null
+                      : () => vm.editMyAdFun(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2462EB),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: AppColors.current.primary,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                   ),
                   child: vm.isEditingLoading
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : CustomText(title: 'حفظ التعديلات', color: Colors.white, fontWeight: FontWeight.bold, size: Theme.of(context).textTheme.bodySmall!.fontSize,),
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : CustomText(
+                          title: 'حفظ التعديلات',
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          size: Theme.of(context).textTheme.bodySmall!.fontSize,
+                        ),
                 ),
               ),
             ],
