@@ -63,10 +63,11 @@ class _HomeScreenState extends State<HomeScreen> {
               headerSliverBuilder: (context, innerBoxIsScrolled) {
                 List<Widget> slivers = [];
 
-                // 1. قسم الأقسام الرئيسية (ثابت)
+                // 1. قسم الأقسام الرئيسية (عائم: يختفي عند السحب للأسفل ويظهر عند السحب للأعلى)
                 slivers.add(
                   SliverPersistentHeader(
-                    pinned: true,
+                    pinned: false,
+                    floating: true,
                     delegate: CategoriesPinnedHeaderDelegate(
                       vm: vm,
                       maxExtentHeight: categoriesExtent,

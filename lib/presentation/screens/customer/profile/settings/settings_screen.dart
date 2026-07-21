@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 
 import '../../../../custom_widgets/Custom_header_bar.dart';
+import '../../settngs/delete_acc.dart';
 import '../custom_widgets/menu_tile.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -31,16 +32,19 @@ class SettingsScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  MenuTile(
-                    icon: Icons.language,
-                    title: 'تغيير اللغة',
-                    onTap: () {},
-                  ),
+                  // MenuTile(
+                  //   icon: Icons.language,
+                  //   title: 'تغيير اللغة',
+                  //   onTap: () {},
+                  // ),
                   _buildDivider(),
                   MenuTile(
                     icon: Icons.delete_forever_outlined,
                     title: 'حذف حسابي',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(context,
+                      MaterialPageRoute(builder: (context) => const DeleteAccountPage()));
+                    },
                     isDestructive: true, // لون أحمر
                   ),
                 ],

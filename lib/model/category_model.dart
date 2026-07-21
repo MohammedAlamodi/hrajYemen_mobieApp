@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../configurations/data/end_points_manager.dart';
+
 class SubCategoryModel {
   final int id;
   final String name;
@@ -31,10 +33,26 @@ class CategoryModel {
     return CategoryModel(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
-      imageUrl: json['imageUrl'], // قد يكون null
+      // تحويل المسار النسبي القادم من السيرفر إلى رابط كامل
+      imageUrl: _buildFullImageUrl(json['imageUrl']),
       subCategories: (json['subCategories'] as List<dynamic>?)
           ?.map((e) => SubCategoryModel.fromJson(e))
           .toList() ?? [],
     );
+  }
+
+  /// يحوّل مسار الصورة (مثل "images/categories/x.png") إلى رابط كامل.
+  /// يُعيد null إذا لم توجد صورة، ويُبقي الرابط كما هو إذا كان كاملاً أصلاً.
+  static String? _buildFullImageUrl(dynamic rawPath) {
+    if (rawPath == null) return null;
+    final path = rawPath.toString().trim();
+    if (path.isEmpty) return null;
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    // baseUrl ينتهي بـ '/'، لذا نزيل أي '/' بادئ من المسار لتفادي التكرار
+    final base = EndPointsStrings.baseUrl;
+    final cleaned = path.startsWith('/') ? path.substring(1) : path;
+    return '$base$cleaned';
   }
 }

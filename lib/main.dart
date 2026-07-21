@@ -106,49 +106,62 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     CommonViewModel commonViewModel =Provider.of<CommonViewModel>(context);
     debugPrint('*****locale ${commonViewModel.locale}');
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      navigatorKey: navigatorKey,
-      locale: Locale(commonViewModel.locale, ""),
-      // locale: const Locale('ar', ""),
-      localizationsDelegates: const [
-        S.delegate,
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate
-      ],
-      supportedLocales: S.delegate.supportedLocales,
-      localeListResolutionCallback:
-      S.delegate.listResolution(fallback: const Locale('ar', '')),
-      theme: ThemeData(
-        fontFamily: 'Expo Arabic',
-        primarySwatch: MaterialColor(AppColors.current.primary.value,
-            getColorsSwatch(AppColors.current.primary)),
-        // primaryColor: AppColors.current.primary,
-        // primaryColorLight: AppColors.current.primary,
-        // indicatorColor: AppColors.current.primary,
-        // brightness: Brightness.light,
-        // hintColor: Colors.grey,
-        textTheme: TextTheme(
-          bodySmall: TextStyle(
-              fontSize: setFontSize(context,
-                  ifPortrait: isTablet(context) ? 0.024 : 0.035,
-                  notPortrait: isTablet(context) ? 0.026 : 0.036),
-              color: Colors.black),
-          bodyMedium: TextStyle(
-              fontSize: setFontSize(context,
-                  ifPortrait: isTablet(context) ? 0.03 : 0.04,
-                  notPortrait: isTablet(context) ? 0.033 : 0.042),
-              color: Colors.black),
-          bodyLarge: TextStyle(
-              fontSize: setFontSize(context,
-                  ifPortrait: isTablet(context) ? 0.032 : 0.044,
-                  notPortrait: isTablet(context) ? 0.032 : 0.046),
-              color: Colors.black),
+    return Column(
+      children: [
+        Expanded(
+          child: MaterialApp(
+            debugShowCheckedModeBanner: false,
+            navigatorKey: navigatorKey,
+            color: Colors.white,
+            locale: Locale(commonViewModel.locale, ""),
+            // locale: const Locale('ar', ""),
+            localizationsDelegates: const [
+              S.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate
+            ],
+            supportedLocales: S.delegate.supportedLocales,
+            localeListResolutionCallback:
+            S.delegate.listResolution(fallback: const Locale('ar', '')),
+            theme: ThemeData(
+              fontFamily: 'Expo Arabic',
+              primarySwatch: MaterialColor(AppColors.current.primary.value,
+                  getColorsSwatch(AppColors.current.primary)),
+              // primaryColor: AppColors.current.primary,
+              // primaryColorLight: AppColors.current.primary,
+              // indicatorColor: AppColors.current.primary,
+              // brightness: Brightness.light,
+              // hintColor: Colors.grey,
+              textTheme: TextTheme(
+                bodySmall: TextStyle(
+                    fontSize: setFontSize(context,
+                        ifPortrait: isTablet(context) ? 0.024 : 0.035,
+                        notPortrait: isTablet(context) ? 0.026 : 0.036),
+                    color: Colors.black),
+                bodyMedium: TextStyle(
+                    fontSize: setFontSize(context,
+                        ifPortrait: isTablet(context) ? 0.03 : 0.04,
+                        notPortrait: isTablet(context) ? 0.033 : 0.042),
+                    color: Colors.black),
+                bodyLarge: TextStyle(
+                    fontSize: setFontSize(context,
+                        ifPortrait: isTablet(context) ? 0.032 : 0.044,
+                        notPortrait: isTablet(context) ? 0.032 : 0.046),
+                    color: Colors.black),
+              ),
+            ),
+            routes: MyRoutes.routes,
+            onGenerateRoute: MyRoutes.getRoutes,
+          ),
         ),
-      ),
-      routes: MyRoutes.routes,
-      onGenerateRoute: MyRoutes.getRoutes,
+        // مسافة بيضاء صغيرة أسفل التطبيق (بدون Card حتى لا يظهر خط/ظل)
+        const SizedBox(
+          height: 15,
+          width: double.infinity,
+          child: ColoredBox(color: Colors.white),
+        ),
+      ],
     );
   }
 

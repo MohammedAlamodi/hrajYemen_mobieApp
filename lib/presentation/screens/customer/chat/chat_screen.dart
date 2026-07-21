@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/configurations/user_preferences.dart';
@@ -153,6 +154,42 @@ class _InputArea extends StatelessWidget {
 
   const _InputArea({required this.vm});
 
+  // نافذة سفلية لاختيار مصدر الصورة (الكاميرا أو المعرض)
+  void _pickImageSource(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined,
+                    color: Color(0xFF2462EB)),
+                title: const CustomText(title: 'اختيار من المعرض'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  vm.sendImage(source: ImageSource.gallery, context: context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.camera_alt_outlined,
+                    color: Color(0xFF2462EB)),
+                title: const CustomText(title: 'التقاط صورة بالكاميرا'),
+                onTap: () {
+                  Navigator.pop(sheetContext);
+                  vm.sendImage(source: ImageSource.camera, context: context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -224,21 +261,25 @@ class _InputArea extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
             child: Row(
               children: [
-                IconButton(
-                  icon: const Icon(
-                    Icons.image_outlined,
-                    color: Color(0xFF63748A),
-                  ),
-                  onPressed: (){
-                    // vm.sendImage;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: CustomText(title: 'ميزة إرسال الصور قيد التطوير'),
-                        // backgroundColor: Colors.green,
+                vm.isUploadingImage
+                    ? const Padding(
+                        padding: EdgeInsets.all(12.0),
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Color(0xFF2462EB),
+                          ),
+                        ),
+                      )
+                    : IconButton(
+                        icon: const Icon(
+                          Icons.image_outlined,
+                          color: Color(0xFF63748A),
+                        ),
+                        onPressed: () => _pickImageSource(context),
                       ),
-                    );
-                  },
-                ),
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -325,10 +366,36 @@ class _MessageBubble extends StatelessWidget {
                 _buildProductCardInChat(message.productData!, isMe),
 
               // 2. إذا كانت صورة
-              if (message.type == 'image')
+              if (message.type == 'image' && message.imageUrl.isNotEmpty)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(message.imageUrl, fit: BoxFit.cover),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      maxWidth: 220,
+                      maxHeight: 260,
+                    ),
+                    child: Image.network(
+                      message.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, progress) {
+                        if (progress == null) return child;
+                        return const SizedBox(
+                          width: 180,
+                          height: 180,
+                          child: Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      },
+                      errorBuilder: (_, __, ___) => Container(
+                        width: 180,
+                        height: 120,
+                        color: const Color(0xFFF3F4F6),
+                        child: const Icon(Icons.broken_image_outlined,
+                            color: Colors.grey),
+                      ),
+                    ),
+                  ),
                 ),
 
               // 3. النص (يظهر تحت المنتج أو الصورة إذا وجد)

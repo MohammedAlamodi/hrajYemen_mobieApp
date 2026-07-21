@@ -29,6 +29,10 @@ class ChatViewModel extends ChangeNotifier {
   // 👈 متغير الستريم الجديد
   Stream<QuerySnapshot>? messagesStream;
 
+  // حالة رفع الصورة (لإظهار مؤشّر تحميل ومنع الإرسال المزدوج)
+  bool _isUploadingImage = false;
+  bool get isUploadingImage => _isUploadingImage;
+
   ChatViewModel({
     required this.currentUserId,
     required this.senderProfileImageUrl,
@@ -104,30 +108,56 @@ class ChatViewModel extends ChangeNotifier {
     }
   }
 
-  // إرسال صورة من المعرض
-  Future<void> sendImage() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+  // إرسال صورة (من المعرض أو الكاميرا)
+  Future<void> sendImage({
+    ImageSource source = ImageSource.gallery,
+    BuildContext? context,
+  }) async {
+    if (_isUploadingImage) return; // منع الرفع المزدوج
 
-    if (pickedFile != null) {
-      try {
-        String url = await _repo.uploadImage(File(pickedFile.path));
-        final msg = MessageModel(
-          senderId: currentUserId,
-          senderName: senderName,
-          senderProfileImageUrl: senderProfileImageUrl,
-          receiverId: otherUserId,
-          imageUrl: url,
-          type: 'image',
-          timestamp: DateTime.now(),
+    try {
+      final picker = ImagePicker();
+      final pickedFile = await picker.pickImage(
+        source: source,
+        imageQuality: 70, // ضغط الصورة لتقليل الحجم وتسريع الرفع
+        maxWidth: 1080,
+      );
+
+      if (pickedFile == null) return; // المستخدم ألغى الاختيار
+
+      _isUploadingImage = true;
+      notifyListeners();
+
+      // 1. رفع الصورة إلى Firebase Storage
+      final String url = await _repo.uploadImage(File(pickedFile.path));
+
+      // 2. إرسال رسالة من نوع صورة
+      final msg = MessageModel(
+        senderId: currentUserId,
+        senderName: senderName,
+        senderProfileImageUrl: senderProfileImageUrl,
+        receiverId: otherUserId,
+        imageUrl: url,
+        type: 'image',
+        timestamp: DateTime.now(),
+      );
+
+      await _repo.sendMessage(
+        chatRoomId: chatRoomId,
+        message: msg,
+        receiverName: otherUserName,
+        receiverImageUrl: otherUserImageUrl,
+      );
+    } catch (e) {
+      debugPrint("Error uploading image: $e");
+      if (context != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('فشل في إرسال الصورة، حاول مرة أخرى')),
         );
-        await _repo.sendMessage(chatRoomId: chatRoomId,
-          message: msg,
-          receiverName: otherUserName,
-          receiverImageUrl: otherUserImageUrl,);
-      } catch (e) {
-        print("Error uploading image: $e");
       }
+    } finally {
+      _isUploadingImage = false;
+      notifyListeners();
     }
   }
 

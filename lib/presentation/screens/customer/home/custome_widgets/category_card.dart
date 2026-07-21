@@ -17,12 +17,26 @@ class CategoryCard extends StatelessWidget {
   Widget buildCategoryIcon(CategoryModel category) {
     // إذا كانت الصورة موجودة في السيرفر
     if (category.imageUrl != null && category.imageUrl!.isNotEmpty) {
-      return Image.network(
-        category.imageUrl!,
-        width: 50,
-        height: 50,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildDefaultIcon(category.name), // إذا فشل تحميل الصورة
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.network(
+          category.imageUrl!,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.contain,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return const Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) =>
+              _buildDefaultIcon(category.name), // إذا فشل تحميل الصورة
+        ),
       );
     }
     // إذا كانت القيمة null من السيرفر، نعرض أيقونة افتراضية

@@ -60,6 +60,18 @@ class FilterBottomSheet extends StatelessWidget {
           const SizedBox(height: 8),
           _buildCitiesSection(context,vm),
 
+          // قسم المناطق (يظهر فقط بعد اختيار مدينة)
+          if (vm.selectedCity != null) ...[
+            const SizedBox(height: 16),
+            CustomText(
+              title: 'اختر المنطقة:',
+              fontWeight: FontWeight.bold,
+              size: Theme.of(context).textTheme.bodySmall!.fontSize! - 1,
+            ),
+            const SizedBox(height: 8),
+            _buildRegionsSection(context, vm),
+          ],
+
           const SizedBox(height: 16),
 
           // قسم السعر
@@ -133,6 +145,42 @@ class FilterBottomSheet extends StatelessWidget {
           ),
           selected: isSelected,
           onSelected: (_) => vm.selectCity(city),
+          selectedColor: Colors.blue.withOpacity(0.2),
+          checkmarkColor: Colors.blue,
+        );
+      }).toList(),
+    );
+  }
+
+  Widget _buildRegionsSection(BuildContext context, HomeViewModel vm) {
+    if (vm.isLoadingRegions) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 8),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (vm.regions.isEmpty) {
+      return Text(
+        'لا توجد مناطق متاحة لهذه المدينة',
+        style: TextStyle(
+          color: Colors.grey,
+          fontSize: Theme.of(context).textTheme.bodySmall!.fontSize! - 1,
+        ),
+      );
+    }
+
+    // عرض المناطق كأزرار (Chips)
+    return Wrap(
+      spacing: 8,
+      children: vm.regions.map((region) {
+        final isSelected = vm.selectedRegion?.id == region.id;
+        return FilterChip(
+          label: CustomText(
+            title: region.name,
+            size: Theme.of(context).textTheme.bodySmall!.fontSize! - 1,
+          ),
+          selected: isSelected,
+          onSelected: (_) => vm.selectRegion(region),
           selectedColor: Colors.blue.withOpacity(0.2),
           checkmarkColor: Colors.blue,
         );

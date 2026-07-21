@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/helpers_functions.dart';
+import 'package:ye_hraj/presentation/custom_widgets/en_digits_input_formatter.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/configurations/resources/assets_manager.dart';
 import 'package:ye_hraj/presentation/custom_widgets/cust_svg_icons.dart';
@@ -101,6 +103,8 @@ class AddAdStep1Details extends StatelessWidget {
                 hint: '0',
                 // أزلنا الـ suffixText الثابت لأن العملة أصبحت ديناميكية
                 keyboardType: TextInputType.number,
+                // تحويل الأرقام العربية إلى إنجليزية تلقائياً
+                inputFormatters: [EnglishDigitsInputFormatter()],
               ),
             ),
             const SizedBox(width: 10),
@@ -178,7 +182,10 @@ class AddAdStep1Details extends StatelessWidget {
         _buildTextField(
           controller: vm.descriptionController,
           hint: 'اكتب وصفاً تفصيلياً للإعلان يوضح المميزات والعيوب...',
-          maxLines: 5,
+          // يسمح بالنزول لأسطر جديدة وينمو للأسفل
+          keyboardType: TextInputType.multiline,
+          minLines: 5,
+          maxLines: null,
           maxLength: 500,
         ),
 
@@ -268,10 +275,12 @@ class AddAdStep1Details extends StatelessWidget {
   Widget _buildTextField({
     required TextEditingController controller,
     required String hint,
-    int maxLines = 1,
+    int? maxLines = 1,
+    int? minLines,
     int? maxLength,
     String? suffixText,
     TextInputType keyboardType = TextInputType.text,
+    List<TextInputFormatter>? inputFormatters,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -282,8 +291,13 @@ class AddAdStep1Details extends StatelessWidget {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
+        minLines: minLines,
         maxLength: maxLength,
         keyboardType: keyboardType,
+        inputFormatters: inputFormatters,
+        textInputAction: keyboardType == TextInputType.multiline
+            ? TextInputAction.newline
+            : null,
         textAlign: TextAlign.right,
         // محاذاة النص للعربية
         style: const TextStyle(

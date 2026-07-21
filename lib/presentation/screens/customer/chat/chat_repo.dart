@@ -1,6 +1,9 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../../model/message_model.dart';
 
@@ -61,13 +64,36 @@ class ChatRepository {
   // رفع الصور
   Future<String> uploadImage(File file) async {
     try {
-      String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
-      Reference ref = _storage.ref().child('chat_images/$fileName');
-      UploadTask uploadTask = ref.putFile(file);
-      TaskSnapshot snapshot = await uploadTask;
+      // 1. تأكد من وجود جلسة مصادقة (مجهولة) قبل الرفع،
+      //    لأن قواعد الأمان تشترط request.auth != null
+      if (FirebaseAuth.instance.currentUser == null) {
+        await FirebaseAuth.instance.signInAnonymously();
+      }
+
+      debugPrint(
+        '📦 bucket: ${_storage.bucket}, '
+        'auth uid: ${FirebaseAuth.instance.currentUser?.uid}',
+      );
+
+      final String fileName = '${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final Reference ref = _storage.ref().child('chat_images/$fileName');
+
+      // 2. تعيين نوع المحتوى صراحةً ليتوافق مع شرط contentType في الرولز
+      final TaskSnapshot snapshot = await ref.putFile(
+        file,
+        SettableMetadata(contentType: 'image/jpeg'),
+      );
       return await snapshot.ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      // إظهار الخطأ الحقيقي من Firebase بدل رسالة عامة
+      debugPrint(
+        '❌ Storage upload failed → code: ${e.code}, message: ${e.message}, '
+        'bucket: ${_storage.bucket}',
+      );
+      rethrow;
     } catch (e) {
-      throw Exception('فشل في رفع الصورة');
+      debugPrint('❌ Storage upload unexpected error: $e');
+      rethrow;
     }
   }
 

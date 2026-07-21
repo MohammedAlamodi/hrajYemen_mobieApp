@@ -57,6 +57,23 @@ class RegisterViewModel extends ChangeNotifier {
   bool get isOtpSent => _isOtpSent;
   bool get isOtpLoading => _isOtpLoading;
 
+  /// هل الرقم يمني (كود الدولة +967)؟
+  /// ملاحظة مؤقتة: الأرقام اليمنية تتخطّى التحقق بالـ OTP حالياً بسبب عدم
+  /// توصيل مزوّد الـ SMS لليمن، وسيتم تغيير طريقة التحقق للأرقام اليمنية لاحقاً.
+  bool get isYemeniNumber {
+    final code = phoneCuntry.trim();
+    return code == '+967' || code == '967';
+  }
+
+  /// تعليم الرقم كمؤكَّد بدون OTP (يُستخدم للأرقام اليمنية مؤقتاً).
+  void markPhoneVerifiedWithoutOtp() {
+    _isPhoneVerified = true;
+    _isOtpSent = false;
+    _isOtpLoading = false;
+    _verificationId = null;
+    notifyListeners();
+  }
+
   // --- Getters ---
   File? get personalPhoto => _personalPhoto;
   bool get isLoading => _isLoading;
@@ -181,6 +198,16 @@ class RegisterViewModel extends ChangeNotifier {
       return false;
     }
 
+    if (_selectedCity == null) {
+      _showError(context, 'يرجى اختيار المدينة');
+      return false;
+    }
+
+    if (_selectedRegion == null) {
+      _showError(context, 'يرجى اختيار المنطقة');
+      return false;
+    }
+
     return true;
   }
 
@@ -212,6 +239,15 @@ class RegisterViewModel extends ChangeNotifier {
   // 🔥 دوال الفايربيس (إرسال وتحقق OTP)
   // ==========================================
 
+  /// تنظيف الرقم: إبقاء الأرقام فقط وإزالة أي صفر بادئ (مثل 07.. → 7..)
+  String _normalizePhone(String raw) {
+    String digits = raw.replaceAll(RegExp(r'[^0-9]'), '');
+    while (digits.startsWith('0')) {
+      digits = digits.substring(1);
+    }
+    return digits;
+  }
+
   Future<void> sendOtp(BuildContext context) async {
     String phone = phoneController.trim();
     String phoneCun = phoneCuntry.trim();
@@ -221,6 +257,10 @@ class RegisterViewModel extends ChangeNotifier {
       return;
     }
 
+    // بناء الرقم بصيغة E.164 الصحيحة: +<كود الدولة><الرقم بدون صفر بادئ>
+    final String fullNumber = '$phoneCun${_normalizePhone(phone)}';
+    debugPrint('📞 Sending OTP to (E.164): $fullNumber');
+
     _isOtpLoading = true;
     _isOtpSent = false;
     _isPhoneVerified = false;
@@ -229,7 +269,7 @@ class RegisterViewModel extends ChangeNotifier {
     await FirebaseAuth.instance.setLanguageCode('ar');
 
     await FirebaseAuth.instance.verifyPhoneNumber(
-      phoneNumber: '$phoneCun$phone',
+      phoneNumber: fullNumber,
       verificationCompleted: (PhoneAuthCredential credential) async {
         _isPhoneVerified = true;
         _isOtpSent = true; // ✅ نبقيها true حتى تظهر الواجهة الصحيحة
@@ -240,10 +280,13 @@ class RegisterViewModel extends ChangeNotifier {
         _isOtpLoading = false;
         _isOtpSent = false;
         notifyListeners();
+        // طباعة الكود والرسالة الحقيقية للتشخيص
+        debugPrint('❌ OTP verificationFailed → code: ${e.code}, '
+            'message: ${e.message}');
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('فشل الإرسال: ${e.message}'),
+              content: Text('فشل الإرسال (${e.code}): ${e.message}'),
               backgroundColor: Colors.red,
             ),
           );

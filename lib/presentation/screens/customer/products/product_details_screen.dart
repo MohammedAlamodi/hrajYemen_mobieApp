@@ -68,6 +68,39 @@ class ProductDetailsScreen extends StatelessWidget {
                             padding: const EdgeInsets.all(16.0),
                             sliver: SliverList(
                               delegate: SliverChildListDelegate([
+                                // شريط "الإعلان منتهي"
+                                if (!product.isActive)
+                                  Container(
+                                    width: double.infinity,
+                                    margin: const EdgeInsets.only(bottom: 12),
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 10, horizontal: 12),
+                                    decoration: BoxDecoration(
+                                      color: Colors.orange.withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                          color: Colors.orange.withOpacity(0.4)),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      children: [
+                                        const Icon(Icons.error_outline,
+                                            color: Colors.orange, size: 18),
+                                        const SizedBox(width: 6),
+                                        CustomText(
+                                          title: 'هذا الإعلان منتهي',
+                                          color: Colors.orange,
+                                          fontWeight: FontWeight.bold,
+                                          size: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall!
+                                              .fontSize,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
                                 // السعر والعنوان
                                 CustomText(
                                   title: product.price.toString(),
@@ -161,9 +194,14 @@ class ProductDetailsScreen extends StatelessWidget {
                                   sellerName: commonViewModel.isLoggedIn
                                       ? product.user?.fullName ?? '-'
                                       : 'سجل دخول للعرض',
-                                  sellerPhone: commonViewModel.isLoggedIn
-                                      ? product.user?.phoneNumber ?? '-'
-                                      : 'سجل دخول لعرض بيانات البائع',
+                                  sellerPhone: !commonViewModel.isLoggedIn
+                                      ? 'سجل دخول لعرض بيانات البائع'
+                                      : (!product.isActive || !product.allowCall)
+                                          ? 'الرقم مخفي'
+                                          : (product.user?.phoneNumber ?? '-'),
+                                  phoneVisible: commonViewModel.isLoggedIn &&
+                                      product.isActive &&
+                                      product.allowCall,
                                   sellerImageUrl: product.user?.profileImageUrl,
                                 ),
 
@@ -172,6 +210,7 @@ class ProductDetailsScreen extends StatelessWidget {
                                 // استبدل _buildSectionContainer القديم الخاص بالتعليقات بهذا السطر:
                                 ProductCommentsSection(
                                   comments: product.comments,
+                                  isExpired: !product.isActive,
                                 ),
                                 // مسافة للبار السفلي
                                 const SizedBox(height: 100),
@@ -188,19 +227,37 @@ class ProductDetailsScreen extends StatelessWidget {
                         right: 0,
                         child: ProductBottomBar(
                           productId: product.id,
+                          callEnabled: product.isActive && product.allowCall,
+                          chatEnabled: product.isActive && product.allowChat,
                           onCallTap: () {
-                            if (product.user?.phoneNumber != null) {
-                              if (product.user!.phoneNumber!.contains('-')) {
-                                List phones = product.user!.phoneNumber!.split(
-                                  '-',
-                                );
-                                String fullPhone =
-                                    '${phones[0].trim()}${phones[1].trim()}';
-                                _callDriver(context, fullPhone);
-                              }
+                            // الإعلان منتهي
+                            if (!product.isActive) {
+                              _showInfoSnack(context, 'هذا الإعلان منتهي');
+                              return;
+                            }
+                            // المالك أوقف الاتصال
+                            if (!product.allowCall) {
+                              _showInfoSnack(
+                                  context, 'مالك الإعلان موقف الاتصال');
+                              return;
+                            }
+                            final phone = product.user?.phoneNumber;
+                            if (phone != null && phone.trim().isNotEmpty) {
+                              _callDriver(context, phone);
+                            } else {
+                              _showInfoSnack(context, 'لا يوجد رقم متاح');
                             }
                           },
                           onChatTap: () {
+                            if (!product.isActive) {
+                              _showInfoSnack(context, 'هذا الإعلان منتهي');
+                              return;
+                            }
+                            if (!product.allowChat) {
+                              _showInfoSnack(
+                                  context, 'مالك الإعلان أوقف المراسلة');
+                              return;
+                            }
                             vm.startChatWithSeller(context, product);
                           },
                           onShareTap: () {
@@ -243,45 +300,37 @@ class ProductDetailsScreen extends StatelessWidget {
   }
 
   Future<void> _callDriver(BuildContext context, String phoneNumber) async {
-    String phone = phoneNumber.trim();
+    // تنظيف الرقم: إزالة الفاصل بين كود الدولة والرقم والمسافات
+    final String phone =
+        phoneNumber.replaceAll('-', '').replaceAll(' ', '').trim();
 
     final Uri phoneUri = Uri(scheme: 'tel', path: phone);
 
     try {
-      // تحقق أولًا من وجود تطبيق اتصال
-      if (await launchUrl(
-        Uri.parse('tel:+967738883773'),
-        mode: LaunchMode.externalApplication,
-      )) {
-        // استخدم LaunchMode.externalApplication لتفادي مشاكل Android 11+
-        await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
-        Navigator.of(context).pop();
-      } else {
-        debugPrint('No dialer app available');
-        // لا يوجد تطبيق اتصال على الجهاز
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: CustomText(
-              title: 'لا يمكن فتح تطبيق الاتصال للرقم $phone',
-              size: Theme.of(context).textTheme.bodySmall!.fontSize!,
-              color: Colors.white,
-            ),
-          ),
-        );
+      // فتح تطبيق الاتصال مباشرة (يعمل على iOS وأندرويد)
+      final bool launched =
+          await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
+      if (!launched && context.mounted) {
+        _showInfoSnack(context, 'تعذّر فتح تطبيق الاتصال للرقم $phone');
       }
     } catch (e) {
       debugPrint('Error launching phone dialer: $e');
-      // في حال حدث خطأ أثناء محاولة الإطلاق
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: CustomText(
-            title: 'حدث خطأ أثناء محاولة الاتصال بالرقم $phone',
-            size: Theme.of(context).textTheme.bodySmall!.fontSize!,
-            color: Colors.white,
-          ),
-        ),
-      );
+      if (context.mounted) {
+        _showInfoSnack(context, 'حدث خطأ أثناء محاولة الاتصال بالرقم $phone');
+      }
     }
+  }
+
+  void _showInfoSnack(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: CustomText(
+          title: message,
+          size: Theme.of(context).textTheme.bodySmall!.fontSize!,
+          color: Colors.white,
+        ),
+      ),
+    );
   }
 
   // --- Widgets مساعدة للصفحة (نفس الكود السابق لترتيب الكود) ---
@@ -369,6 +418,7 @@ class ProductDetailsScreen extends StatelessWidget {
     String? sellerId,
     String? sellerName,
     String? sellerPhone,
+    bool phoneVisible = true,
     String? sellerImageUrl,
   }) {
     return Container(
@@ -412,14 +462,17 @@ class ProductDetailsScreen extends StatelessWidget {
                     children: [
                       Container(
                         decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
+                          color: (phoneVisible ? Colors.green : Colors.grey)
+                              .withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(4.0),
                           child: Icon(
-                            Icons.phone_outlined,
-                            color: Colors.green,
+                            phoneVisible
+                                ? Icons.phone_outlined
+                                : Icons.phone_disabled_outlined,
+                            color: phoneVisible ? Colors.green : Colors.grey,
                             size:
                                 Theme.of(
                                   context,
@@ -433,7 +486,10 @@ class ProductDetailsScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(4.0),
                         child: CustomText(
                           title: sellerPhone ?? '-',
-                          size: Theme.of(context).textTheme.bodySmall!.fontSize,
+                          size: phoneVisible
+                              ? Theme.of(context).textTheme.bodySmall!.fontSize
+                              : Theme.of(context).textTheme.bodySmall!.fontSize! -
+                                  2,
                           color: Colors.grey,
                           fontWeight: FontWeight.bold,
                         ),

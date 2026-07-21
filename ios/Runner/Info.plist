@@ -4,10 +4,32 @@
 <dict>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<string>tel</string>
+		<string>telprompt</string>
+	</array>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>نحتاج الوصول إلى صورك لإرسالها في الدردشة.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>نحتاج الوصول إلى الكاميرا لالتقاط صورة وإرسالها في الدردشة.</string>
+	<!-- مطلوب لمصادقة الهاتف في Firebase على iOS (رجوع callback للتطبيق).
+	     القيمة هي الـ Encoded App ID التي طلبها خطأ FirebaseAuth. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>app-1-184368422258-ios-be90d5250aa2e90fda11eb</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Ye Hraj</string>
+	<string>حراج اليمن</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>

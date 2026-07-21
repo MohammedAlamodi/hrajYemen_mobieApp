@@ -52,6 +52,7 @@ class DefaultFirebaseOptions {
     messagingSenderId: '184368422258',
     projectId: 'hraj-ye5',
     authDomain: 'hraj-ye5.firebaseapp.com',
+    databaseURL: 'https://hraj-ye5-default-rtdb.firebaseio.com',
     storageBucket: 'hraj-ye5.firebasestorage.app',
     measurementId: 'G-8SJ8TE5BEL',
   );
@@ -61,15 +62,16 @@ class DefaultFirebaseOptions {
     appId: '1:184368422258:android:9fbcc2a4c64162eada11eb',
     messagingSenderId: '184368422258',
     projectId: 'hraj-ye5',
+    databaseURL: 'https://hraj-ye5-default-rtdb.firebaseio.com',
     storageBucket: 'hraj-ye5.firebasestorage.app',
   );
-
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyACo6vOspkq0o-PWBYCxNN7ye8i8Q7vfCo',
-    appId: '1:184368422258:ios:e18aa88b0223a9b5da11eb',
+    appId: '1:184368422258:ios:be90d5250aa2e90fda11eb',
     messagingSenderId: '184368422258',
     projectId: 'hraj-ye5',
+    databaseURL: 'https://hraj-ye5-default-rtdb.firebaseio.com',
     storageBucket: 'hraj-ye5.firebasestorage.app',
-    iosBundleId: 'com.example.yeHraj',
+    iosBundleId: 'com.alamodidev.yehrajapp',
   );
 }

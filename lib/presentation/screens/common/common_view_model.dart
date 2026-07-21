@@ -64,8 +64,8 @@ class CommonViewModel extends ChangeNotifier {
 
   int currentIndex = 0;
 
-  late String currentUserId;
-  late String currentUserName;
+  String currentUserId = '';
+  String currentUserName = '';
 
   bool changeCurrentIndex = false;
 
@@ -99,7 +99,27 @@ class CommonViewModel extends ChangeNotifier {
   List<CitiesModel> cities = [];
   List<RegionModel> regions = [];
 
+  /// حارس لمنع إطلاق أكثر من طلب لجلب المدن في نفس الوقت.
+  bool _isLoadingCities = false;
+
+  bool get isLoadingCities => _isLoadingCities;
+
+  /// هل تم تحميل المدن بنجاح؟
+  bool get hasCities => cities.isNotEmpty;
+
+  /// تتأكد من توفّر المدن: إن كانت محمّلة مسبقاً لا تفعل شيئاً،
+  /// وإن لم تكن محمّلة (ولا يوجد طلب جارٍ) ترسل طلباً لجلبها.
+  /// تُرجع true عندما تصبح المدن متوفّرة.
+  Future<bool> ensureCitiesLoaded(BuildContext context) async {
+    if (hasCities) return true;
+    if (_isLoadingCities) return false;
+    await getAllCities(context);
+    return hasCities;
+  }
+
    Future<void> getAllCities(BuildContext context) async {
+    if (_isLoadingCities) return; // تجنّب الطلبات المتزامنة المكرّرة
+    _isLoadingCities = true;
     _isLoading = true;
     notifyListeners();
 
@@ -121,6 +141,7 @@ class CommonViewModel extends ChangeNotifier {
       homePageErrorMessage = S.of(context)!.anErrorOccurred;
     }
 
+    _isLoadingCities = false;
     _isLoading = false;
     notifyListeners();
   }
@@ -170,6 +191,17 @@ class CommonViewModel extends ChangeNotifier {
 
   void setLoginIn(bool val) {
     _isLoggedIn = val;
+    notifyListeners();
+  }
+
+  /// تصفير كل حالة المستخدم في الذاكرة (تُستدعى عند تسجيل الخروج أو الدخول كزائر).
+  /// تضمن أن لا تبقى أي بيانات خاصة بالمستخدم السابق (شات/بروفايل/مفضلة...الخ).
+  void clearUserSession() {
+    _isLoggedIn = false;
+    currentUserId = '';
+    currentUserName = '';
+    newNotifications = 0;
+    currentIndex = 0;
     notifyListeners();
   }
 

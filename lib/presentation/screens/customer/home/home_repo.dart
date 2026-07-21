@@ -91,6 +91,7 @@ class HomeRepository {
     int? categoryId,
     int? subCategoryId,
     int? cityId,
+    int? regionId,
     double? minPrice,
     double? maxPrice,
     int? condition,
@@ -120,6 +121,7 @@ class HomeRepository {
       if (categoryId != null) queryParams['FilterQuery.CategoryId'] = categoryId;
       if (subCategoryId != null) queryParams['FilterQuery.SubCategoryId'] = subCategoryId;
       if (cityId != null) queryParams['FilterQuery.CityId'] = cityId;
+      if (regionId != null) queryParams['FilterQuery.RegionId'] = regionId;
       if (minPrice != null) queryParams['FilterQuery.MinPrice'] = minPrice;
       if (maxPrice != null) queryParams['FilterQuery.MaxPrice'] = maxPrice;
       if (condition != null) queryParams['FilterQuery.Condition'] = condition;

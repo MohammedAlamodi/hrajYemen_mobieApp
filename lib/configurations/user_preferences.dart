@@ -1,10 +1,13 @@
 import 'package:encrypt/encrypt.dart' as encrypt;
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../presentation/screens/admin_web/login/web_admin_login_screen.dart';
 import '../presentation/screens/common/auth/login/login_view.dart';
+import '../presentation/screens/common/common_view_model.dart';
+import 'data/api_services.dart';
 import 'encryption_decryption.dart';
 import 'resources/strings_manager.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
@@ -114,12 +117,37 @@ class UserPreferences {
   }
 
   Future<void> clearLogout(BuildContext context) async {
-    prefs!.remove(AppStrings.cookie);
-    prefs!.remove(AppStrings.languageKey);
-    prefs!.remove(AppStrings.userNameKey);
-    prefs!.remove(AppStrings.userIdKey);
-    prefs!.remove(AppStrings.userEmailKey);
-    prefs!.remove(AppStrings.refreshToken);
-    prefs!.remove(AppStrings.loginTokenKey);
+    if (prefs == null) {
+      await init();
+    }
+
+    // 1. حذف كل البيانات المخزّنة الخاصة بالمستخدم من الجهاز
+    //    (نُبقي فقط على لغة التطبيق لأنها تفضيل عام وليست بيانات مستخدم).
+    await prefs!.remove(AppStrings.cookie);
+    await prefs!.remove(AppStrings.userNameKey);
+    await prefs!.remove(AppStrings.userIdKey);
+    await prefs!.remove(AppStrings.userEmailKey);
+    await prefs!.remove(AppStrings.userProfileImageUrlKey);
+    await prefs!.remove(AppStrings.userTypeKey);
+    await prefs!.remove(AppStrings.refreshToken);
+    await prefs!.remove(AppStrings.loginTokenKey);
+
+    // 2. تصفير التوكن المحفوظ في الذاكرة (RAM) داخل طبقة الشبكة
+    AppStrings.staticToken = '';
+    ApiService().token = null;
+
+    // 3. تسجيل الخروج من Firebase (يستخدمه الشات) لمنع بقاء جلسة قديمة
+    try {
+      await FirebaseAuth.instance.signOut();
+    } catch (e) {
+      debugPrint("Firebase signOut error (ignored): $e");
+    }
+
+    // 4. تصفير حالة المستخدم في الذاكرة حتى تختفي صفحات الشات/البروفايل فوراً
+    try {
+      Provider.of<CommonViewModel>(context, listen: false).clearUserSession();
+    } catch (e) {
+      debugPrint("clearUserSession error (ignored): $e");
+    }
   }
 }

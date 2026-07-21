@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:ye_hraj/configurations/helpers_functions.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_text.dart';
 
@@ -18,12 +19,26 @@ class CategoryItem extends StatelessWidget {
 
   Widget buildCategoryIcon(CategoryModel category) {
     if (category.imageUrl != null && category.imageUrl!.isNotEmpty) {
-      return Image.network(
-        category.imageUrl!,
-        width: 50,
-        height: 50,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _buildDefaultIcon(category.name),
+      return Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Image.network(
+          category.imageUrl!,
+          width: double.infinity,
+          height: double.infinity,
+          fit: BoxFit.contain,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return const Center(
+              child: SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) =>
+              _buildDefaultIcon(category.name),
+        ),
       );
     } else {
       return _buildDefaultIcon(category.name);
@@ -93,7 +108,7 @@ class CategoryItem extends StatelessWidget {
               // جعل الخط أعرض وأبرز إذا كان القسم محدداً
               fontWeight: isSelected ? FontWeight.w800 : FontWeight.w500,
               color: isSelected ? AppColors.current.primary : const Color(0xFF0F162A),
-              size: Theme.of(context).textTheme.bodySmall!.fontSize! - 2,
+              size: isTablet(context) ? Theme.of(context).textTheme.bodySmall!.fontSize! - 4 : Theme.of(context).textTheme.bodySmall!.fontSize! - 2,
             ),
           ],
         ),

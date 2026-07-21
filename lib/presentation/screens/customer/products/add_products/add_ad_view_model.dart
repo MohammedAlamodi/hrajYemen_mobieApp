@@ -9,6 +9,7 @@ import 'package:ye_hraj/model/cities_model.dart';
 import 'package:ye_hraj/model/product_model.dart';
 import 'package:ye_hraj/model/region_model.dart';
 import 'package:ye_hraj/presentation/custom_widgets/custom_text.dart';
+import 'package:ye_hraj/presentation/custom_widgets/en_digits_input_formatter.dart';
 import 'package:ye_hraj/presentation/screens/common/common_view_model.dart';
 import '../../../../../model/category_model.dart';
 import '../../../../custom_widgets/custom_button.dart';
@@ -60,19 +61,13 @@ class AddAdViewModel extends ChangeNotifier {
   List<File> _images = []; // سنستخدم File للصور الحقيقية
   List<File> get images => _images;
 
-  // --- الخطوة 3: التواصل ---
+  // --- الخطوة 3: التواصل (خياران فقط) ---
   bool _hasChat = true;
   bool _hasCall = true;
-  bool _hasWhatsApp = false;
-  bool _showPhoneNumber = true;
 
   bool get hasChat => _hasChat;
 
   bool get hasCall => _hasCall;
-
-  bool get hasWhatsApp => _hasWhatsApp;
-
-  bool get showPhoneNumber => _showPhoneNumber;
 
   // 🔥 متغيرات العملة
   String priceCurrency = 'ريال يمني'; // العملة الافتراضية
@@ -177,12 +172,6 @@ class AddAdViewModel extends ChangeNotifier {
         break;
       case 'call':
         _hasCall = !_hasCall;
-        break;
-      case 'whatsapp':
-        _hasWhatsApp = !_hasWhatsApp;
-        break;
-      case 'showPhone':
-        _showPhoneNumber = !_showPhoneNumber;
         break;
     }
     notifyListeners();
@@ -302,13 +291,12 @@ class AddAdViewModel extends ChangeNotifier {
     Map<String, dynamic> productData = {
       'Title': titleController.text.trim(),
       'Description': descriptionController.text.trim(),
-      'Price': double.tryParse(priceController.text.trim()) ?? 0.0,
+      'Price':
+          double.tryParse(toEnglishDigits(priceController.text.trim())) ?? 0.0,
 
-      // إعدادات التواصل
+      // إعدادات التواصل (خياران فقط)
       'AllowChat': _hasChat,
       'AllowCall': _hasCall,
-      'AllowWhatsApp': _hasWhatsApp,
-      'ShowPhoneNumber': _showPhoneNumber,
       'PriceCurrency': priceCurrency,
 
       // الـ IDs (نرسل القيم فقط إذا لم تكن null)
@@ -378,8 +366,6 @@ class AddAdViewModel extends ChangeNotifier {
     _images.clear();
     _hasChat = true;
     _hasCall = true;
-    _hasWhatsApp = false;
-    _showPhoneNumber = true;
     priceCurrency = 'ريال يمني';
     notifyListeners();
   }

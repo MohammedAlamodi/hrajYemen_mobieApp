@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/resources/strings_manager.dart';
 import 'package:ye_hraj/configurations/user_preferences.dart';
+import 'package:ye_hraj/presentation/custom_widgets/en_digits_input_formatter.dart';
 import 'package:ye_hraj/presentation/screens/customer/home/home_view_model.dart';
 
 import '../../../../model/product_model.dart';
@@ -58,6 +59,20 @@ class MyAdViewModel extends ChangeNotifier {
   String priceCurrency = 'ريال يمني'; // العملة الافتراضية
   final List<String> currencies = ['ريال يمني', 'ريال سعودي', 'دولار'];
 
+  // إعدادات التواصل (تظهر كأزرار تبديل في شاشة التعديل)
+  bool allowCall = true;
+  bool allowChat = true;
+
+  void setAllowCall(bool value) {
+    allowCall = value;
+    notifyListeners();
+  }
+
+  void setAllowChat(bool value) {
+    allowChat = value;
+    notifyListeners();
+  }
+
   /// تهيئة حقول التعديل بالبيانات الحالية للمنتج
   void initControllers(ProductModel product) {
     originalProduct = product;
@@ -67,6 +82,8 @@ class MyAdViewModel extends ChangeNotifier {
     descController.text = product.description ?? '';
     // condition = product.condition ?? '1';
     priceCurrency = product.priceCurrency ?? currencies[0];
+    allowCall = product.allowCall;
+    allowChat = product.allowChat;
 
     // تجميع الموقع (مدينة - منطقة) بناءً على القيم القادمة من السيرفر
     String location = '';
@@ -156,8 +173,11 @@ class MyAdViewModel extends ChangeNotifier {
         'Description': descController.text.isEmpty
             ? ''
             : descController.text.trim(),
-        'Price': double.tryParse(priceController.text) ?? 0.0,
+        'Price':
+            double.tryParse(toEnglishDigits(priceController.text)) ?? 0.0,
         'PriceCurrency': priceCurrency,
+        'AllowCall': allowCall,
+        'AllowChat': allowChat,
         'regionId': originalProduct!.regionId,
         'cityId': originalProduct!.cityId,
         'categoryId': originalProduct!.categoryId,
@@ -364,6 +384,8 @@ class MyAdViewModel extends ChangeNotifier {
         isBlocked: oldAd.isBlocked,
         isActive: false,
         // 👈 تحويل الحالة إلى مباع
+        allowCall: oldAd.allowCall,
+        allowChat: oldAd.allowChat,
         isFavorite: oldAd.isFavorite,
         mainImageUrl: oldAd.mainImageUrl,
         viewsCount: oldAd.viewsCount,

@@ -60,15 +60,48 @@ class HomeCustomAppBar extends StatelessWidget {
                   },
                 ),
               ),
-              IconButton(
-                icon: const Icon(Icons.filter_list),
-                onPressed: () async {
-                  if(homeViewModel.cities.isEmpty) {
-                    homeViewModel.fetchCities();
-                  }
-                  // 1. فتح نافذة الفلتر وانتظار النتيجة
-                  await FilterBottomSheet.show(context, homeViewModel);
-                },
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.filter_list),
+                    onPressed: () async {
+                      if (homeViewModel.cities.isEmpty) {
+                        homeViewModel.fetchCities();
+                      }
+                      // 1. فتح نافذة الفلتر وانتظار النتيجة
+                      await FilterBottomSheet.show(context, homeViewModel);
+                    },
+                  ),
+                  // شارة حمراء بعدد الفلاتر النشطة (المدينة/المنطقة/السعر)
+                  if (homeViewModel.activeFilterCount > 0)
+                    Positioned(
+                      right: 4,
+                      top: 4,
+                      child: Container(
+                        padding: const EdgeInsets.all(2),
+                        constraints: const BoxConstraints(
+                          minWidth: 18,
+                          minHeight: 18,
+                        ),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Center(
+                          child: Text(
+                            '${homeViewModel.activeFilterCount}',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

@@ -23,37 +23,21 @@ class AddAdStep3Contact extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
+        // السماح بالمراسلة
         _buildSwitchTile(
-          title: 'اتصال هاتفي',
+          title: 'السماح بالمراسلة',
+          icon: Icons.wechat_outlined,
+          value: vm.hasChat,
+          onChanged: (v) => vm.toggleContactMethod('chat'),
+        ),
+        const SizedBox(height: 12),
+
+        // السماح بالاتصال
+        _buildSwitchTile(
+          title: 'السماح بالاتصال',
           icon: Icons.phone_in_talk_outlined,
           value: vm.hasCall,
           onChanged: (v) => vm.toggleContactMethod('call'),
-        ),
-        const SizedBox(height: 12),
-        _buildSwitchTile(
-          title: 'واتساب',
-          icon: Icons.wechat_outlined,
-          value: vm.hasWhatsApp,
-          onChanged: (v) => vm.toggleContactMethod('whatsapp'),
-        ),
-
-        const SizedBox(height: 24),
-        const Divider(),
-        const SizedBox(height: 24),
-
-        // إظهار الرقم
-        const CustomText(
-          title: 'خصوصية الرقم',
-          size: 14,
-          fontWeight: FontWeight.w800,
-          color: Color(0xFF63748A),
-        ),
-        const SizedBox(height: 12),
-        _buildSwitchTile(
-          title: 'إظهار رقم الجوال للجميع',
-          icon: Icons.visibility_outlined,
-          value: vm.showPhoneNumber,
-          onChanged: (v) => vm.toggleContactMethod('showPhone'),
         ),
       ],
     );

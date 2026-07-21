@@ -12,6 +12,8 @@ class ProductBottomBar extends StatelessWidget {
   final VoidCallback onChatTap;
   final VoidCallback onShareTap;
   final VoidCallback onFavoriteTap;
+  final bool callEnabled; // false: الاتصال موقوف/الإعلان منتهي → زر رصاصي
+  final bool chatEnabled; // false: الإعلان منتهي → زر رصاصي
 
   const ProductBottomBar({
     super.key,
@@ -20,6 +22,8 @@ class ProductBottomBar extends StatelessWidget {
     required this.onChatTap,
     required this.onFavoriteTap,
     required this.onShareTap,
+    this.callEnabled = true,
+    this.chatEnabled = true,
   });
 
   @override
@@ -43,7 +47,7 @@ class ProductBottomBar extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // زر المراسلة (كبير ومميز)
+          // زر المراسلة (كبير ومميز) — يصير رصاصي إذا الإعلان منتهي
           ElevatedButton.icon(
             onPressed: onChatTap,
             icon: const Icon(Icons.wechat_outlined, size: 18, color: Colors.white),
@@ -54,7 +58,8 @@ class ProductBottomBar extends StatelessWidget {
                 fontWeight: FontWeight.bold
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.current.primary,
+              backgroundColor:
+                  chatEnabled ? AppColors.current.primary : Colors.grey,
               padding: const EdgeInsets.symmetric(vertical: 12,horizontal: 20),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               elevation: 0,
@@ -62,17 +67,18 @@ class ProductBottomBar extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // زر الاتصال
+          // زر الاتصال — يصير رصاصي إذا الاتصال موقوف أو الإعلان منتهي
           OutlinedButton.icon(
             onPressed: onCallTap,
             icon: Icon(
-                Icons.phone_in_talk_outlined,
-                size: isTablet(context) ? 30 : 18, color:
-                Colors.green
-            ),
+                callEnabled
+                    ? Icons.phone_in_talk_outlined
+                    : Icons.phone_disabled_outlined,
+                size: isTablet(context) ? 30 : 18,
+                color: callEnabled ? Colors.green : Colors.grey),
             label: CustomText(
                 title: 'اتصال',
-                color: AppColors.current.blackGrey,
+                color: callEnabled ? AppColors.current.blackGrey : Colors.grey,
                 size: Theme.of(context).textTheme.bodySmall!.fontSize,
                 fontWeight: FontWeight.bold),
             style: OutlinedButton.styleFrom(

@@ -26,6 +26,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   @override
   Widget build(BuildContext context) {
     registerViewModel = Provider.of<RegisterViewModel>(context);
+    List cu = registerViewModel.phoneCuntry.split('+');
+    // debugPrint('+${cu[1]}');
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -66,8 +68,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             const SizedBox(height: 6),
             Center(
               child: CustomText(
-                title:
-                '${registerViewModel.phoneCuntry} ${registerViewModel.phoneController}',
+                title: '${registerViewModel.phoneController} ${cu[1]}+',
                 fontWeight: FontWeight.bold,
                 size: 18,
                 color: AppColors.current.primary,

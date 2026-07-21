@@ -121,9 +121,8 @@ class AddAdStep4Review extends StatelessWidget {
           context: context,
           title: 'التواصل',
           value: [
-            if (vm.hasChat) 'شات',
+            if (vm.hasChat) 'مراسلة',
             if (vm.hasCall) 'اتصال',
-            if (vm.hasWhatsApp) 'واتس',
           ].join('، '),
           icon: Icons.contact_phone_outlined,
         ),
@@ -141,7 +140,7 @@ class AddAdStep4Review extends StatelessWidget {
             children: [
               Center(
                 child: CustomText(
-                  title: 'إتفاقية حراج حضرموت',
+                  title: 'إتفاقية حراج اليمن',
                   fontWeight: FontWeight.bold,
                   color: AppColors.current.success,
                 ),
@@ -151,7 +150,7 @@ class AddAdStep4Review extends StatelessWidget {
 
               CustomText(
                 title:
-                    'أتعهد أمام اللّٰه وأقسم أنا المعلن بدفع رسوم تطبيق حراج حضرموت المقدرة 1% من قيمة البضاعة المعلنة أو المباعه سواء تم البيع عن طريق التطبيق أو بسببه',
+                    'أتعهد أمام اللّٰه وأقسم أنا المعلن بدفع رسوم تطبيق حراج اليمن المقدرة 1% من قيمة البضاعة المعلنة أو المباعه سواء تم البيع عن طريق التطبيق أو بسببه',
                 color: const Color(0xFF63748A),
                 size: Theme.of(context).textTheme.titleMedium!.fontSize! - 4,
               ),

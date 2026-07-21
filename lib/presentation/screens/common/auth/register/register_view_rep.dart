@@ -70,18 +70,37 @@ class RegistrationViewRepository {
         if(response.statusCode == 400){
           debugPrint("خطأ في التسجيل: ${response.data}");
           if(response.data != null && response.data is Map<String, dynamic>){
-            if(response.data.containsKey('message')){
-              if(!context.mounted) return false;
+            if (response.data.containsKey('message')) {
+              if (!context.mounted) return false;
 
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: CustomText(
-                    size: Theme.of(context).textTheme.bodySmall!.fontSize! - 2,
-                    title: response.data['message'],
-                  ),
-                  backgroundColor: Colors.red,
-                ),
+              // إظهار الديالوج بدلاً من السناك بار
+              showDialog(
+                context: context,
+                builder: (BuildContext context) {
+                  return AlertDialog(
+                    backgroundColor: Colors.white,
+                    title: CustomText(
+                      title: "خطأ في التسجيل",
+                      size: Theme.of(context).textTheme.titleMedium!.fontSize,
+                      color: Colors.redAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    content: CustomText(
+                      size: Theme.of(context).textTheme.bodySmall!.fontSize,
+                      title: response.data['message'],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pop(context); // إغلاق الديالوج للرجوع للتعديل
+                        },
+                        child: const Text("الرجوع للتعديل"),
+                      ),
+                    ],
+                  );
+                },
               );
+
               debugPrint("تفاصيل الأخطاء: ${response.data['message']}");
             }
           }

@@ -1,8 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../common_view_model.dart';
 import 'package:ye_hraj/presentation/screens/common/auth/forget_password_email/forgot_password_screen.dart';
-import 'package:ye_hraj/presentation/screens/customer/home/home_screen.dart';
 import '../../../../../configurations/data/api_services.dart';
 import '../../../../../configurations/helpers_functions.dart';
 import '../../../../../configurations/localization/i18n.dart';
@@ -13,8 +15,8 @@ import '../../../../custom_widgets/custom_button.dart';
 import '../../../../custom_widgets/custom_text.dart';
 import '../../../../custom_widgets/custom_text_field.dart';
 import '../../../../custom_widgets/laguage_icon.dart';
-import '../../../customer/home/main_wrapper_screen.dart';
 import '../register/register_view.dart';
+import 'custom_widgets/guest_entry_button.dart';
 import 'login_view_model.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -35,10 +37,17 @@ class _LoginScreenState extends State<LoginScreen> {
   // String? _selectedUrl;
   // String? _selectedDatabase;
 
+  /// مؤقّت دوري يتحقق من تحميل المدن، ويطلبها إن لم تكن محمّلة.
+  Timer? _citiesCheckTimer;
+
+  /// الفترة بين كل محاولة تحقّق.
+  static const Duration _citiesCheckInterval = Duration(seconds: 3);
+
   @override
   void initState() {
     super.initState();
     _init();
+    _startCitiesWatcher();
   }
 
   Future<void> _init() async {
@@ -46,6 +55,41 @@ class _LoginScreenState extends State<LoginScreen> {
     await ApiService().getToken();
     userName = TextEditingController(text: loginViewModel.userName);
     password = TextEditingController(text: loginViewModel.password);
+  }
+
+  /// يبدأ المراقبة: محاولة فورية ثم تكرار كل [_citiesCheckInterval].
+  /// عند توفّر المدن يتوقف المؤقّت لتفادي استهلاك الموارد.
+  void _startCitiesWatcher() {
+    // محاولة فورية بعد اكتمال أول إطار حتى يكون الـ context جاهزاً.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkAndLoadCities());
+
+    _citiesCheckTimer =
+        Timer.periodic(_citiesCheckInterval, (_) => _checkAndLoadCities());
+  }
+
+  Future<void> _checkAndLoadCities() async {
+    if (!mounted) return;
+    final commonVM = Provider.of<CommonViewModel>(context, listen: false);
+
+    // إذا كانت المدن محمّلة مسبقاً، أوقف المراقبة ولا تفعل شيئاً.
+    if (commonVM.hasCities) {
+      _citiesCheckTimer?.cancel();
+      _citiesCheckTimer = null;
+      return;
+    }
+
+    // غير محمّلة: أرسل طلباً (الحارس داخل الـ VM يمنع الطلبات المتزامنة).
+    final loaded = await commonVM.ensureCitiesLoaded(context);
+    if (loaded && mounted) {
+      _citiesCheckTimer?.cancel();
+      _citiesCheckTimer = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _citiesCheckTimer?.cancel();
+    super.dispose();
   }
 
   @override
@@ -63,7 +107,7 @@ class _LoginScreenState extends State<LoginScreen> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               SizedBox(height: 40),
-              LanguageIcon(),
+              // LanguageIcon(),
               SizedBox(height: 20),
               Expanded(
                 child: ListView(
@@ -223,30 +267,9 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     const SizedBox(height: 10),
 
-                    Row(
+                    const Row(
                       mainAxisAlignment: MainAxisAlignment.start,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(8.0),
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.pushNamedAndRemoveUntil(
-                                context,
-                                MainWrapperScreen.routeName,
-                                    (route) => false,
-                              );
-                            },
-                            child: CustomText(
-                              title: 'الدخول كزائر',
-                              size: Theme.of(
-                                context,
-                              ).textTheme.bodySmall!.fontSize,
-                              // fontWeight: FontWeight.bold,
-                              color: AppColors.current.primary,
-                            ),
-                          ),
-                        ),
-                      ],
+                      children: [GuestEntryButton()],
                     ),
                     const SizedBox(height: 25),
                   ],
@@ -259,170 +282,3 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 }
-
-// import 'package:flutter/material.dart';
-//
-// class LoginScreen extends StatelessWidget {
-//
-//   static const String routeName = "/LoginScreen";
-//
-//   const LoginScreen({Key? key}) : super(key: key);
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     return Directionality(
-//       textDirection: TextDirection.rtl,
-//       child: Scaffold(
-//         backgroundColor: Colors.white,
-//         body: SafeArea(
-//           child: SingleChildScrollView(
-//             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-//             child: Column(
-//               crossAxisAlignment: CrossAxisAlignment.center,
-//               children: [
-//                 Align(
-//                   alignment: Alignment.topLeft,
-//                   child: Padding(
-//                     padding: const EdgeInsets.only(top: 16.0),
-//                     child: Image.asset(
-//                       'assets/icons/uk_flag.png',
-//                       width: 32,
-//                       height: 32,
-//                     ),
-//                   ),
-//                 ),
-//                 const SizedBox(height: 40),
-//                 Image.asset(
-//                   'assets/icons/logo.png',
-//                   width: 72,
-//                   height: 72,
-//                 ),
-//                 const SizedBox(height: 16),
-//                 const Text(
-//                   'تسجيل الدخول',
-//                   style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-//                 ),
-//                 const SizedBox(height: 8),
-//                 const Text(
-//                   'سجل دخولك للوصول إلى حسابك وبدء طلباتك بسهولة!',
-//                   textAlign: TextAlign.center,
-//                   style: TextStyle(color: Colors.grey),
-//                 ),
-//                 const SizedBox(height: 32),
-//                 _buildTextField(
-//                   label: 'البريد الإلكتروني أو رقم الجوال *',
-//                   hint: 'أدخل بريدك الإلكتروني أو رقم الجوال',
-//                   icon: 'assets/icons/mail_icon.svg',
-//                 ),
-//                 const SizedBox(height: 16),
-//                 _buildTextField(
-//                   label: 'كلمة المرور *',
-//                   hint: 'أدخل كلمة المرور',
-//                   icon: 'assets/icons/lock_icon.svg',
-//                   obscure: true,
-//                 ),
-//                 const SizedBox(height: 8),
-//                 Align(
-//                   alignment: Alignment.centerLeft,
-//                   child: Text(
-//                     'هل نسيت كلمة المرور؟',
-//                     style: TextStyle(color: Colors.orange[700]),
-//                   ),
-//                 ),
-//                 const SizedBox(height: 24),
-//                 SizedBox(
-//                   width: double.infinity,
-//                   height: 48,
-//                   child: ElevatedButton(
-//                     onPressed: () {},
-//                     style: ElevatedButton.styleFrom(
-//                       backgroundColor: Colors.orange,
-//                       shape: RoundedRectangleBorder(
-//                         borderRadius: BorderRadius.circular(24),
-//                       ),
-//                     ),
-//                     child: const Text(
-//                       'سجل دخولك',
-//                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-//                     ),
-//                   ),
-//                 ),
-//                 // const SizedBox(height: 24),
-//                 // const Text('أو التسجيل عن طريق'),
-//                 // const SizedBox(height: 16),
-//                 // Row(
-//                 //   mainAxisAlignment: MainAxisAlignment.center,
-//                 //   children: [
-//                 //     _buildSocialIcon('assets/icons/apple_icon.png'),
-//                 //     const SizedBox(width: 16),
-//                 //     _buildSocialIcon('assets/icons/google_icon.png'),
-//                 //     const SizedBox(width: 16),
-//                 //     _buildSocialIcon('assets/icons/facebook_icon.png'),
-//                 //   ],
-//                 // ),
-//                 const SizedBox(height: 24),
-//                 Row(
-//                   mainAxisAlignment: MainAxisAlignment.center,
-//                   children: const [
-//                     Text('ليس لديك حساب؟ '),
-//                     Text(
-//                       'إنشاء حساب',
-//                       style: TextStyle(color: Colors.orange),
-//                     )
-//                   ],
-//                 )
-//               ],
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-//
-//   Widget _buildTextField({
-//     required String label,
-//     required String hint,
-//     required String icon,
-//     bool obscure = false,
-//   }) {
-//     return Column(
-//       crossAxisAlignment: CrossAxisAlignment.start,
-//       children: [
-//         Text(
-//           label,
-//           style: const TextStyle(fontWeight: FontWeight.bold),
-//         ),
-//         const SizedBox(height: 8),
-//         TextField(
-//           obscureText: obscure,
-//           decoration: InputDecoration(
-//             hintText: hint,
-//             prefixIcon: Padding(
-//               padding: const EdgeInsets.all(12.0),
-//               child: SvgPicture.asset(
-//                 icon,
-//                 width: 20,
-//                 height: 20,
-//               ),
-//             ),
-//             border: OutlineInputBorder(
-//               borderRadius: BorderRadius.circular(12),
-//             ),
-//           ),
-//         ),
-//       ],
-//     );
-//   }
-//
-//   Widget _buildSocialIcon(String path) {
-//     return CircleAvatar(
-//       radius: 24,
-//       backgroundColor: Colors.grey.shade100,
-//       child: Image.asset(
-//         path,
-//         width: 24,
-//         height: 24,
-//       ),
-//     );
-//   }
-// }

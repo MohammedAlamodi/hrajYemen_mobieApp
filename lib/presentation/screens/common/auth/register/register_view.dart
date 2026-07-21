@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:ye_hraj/configurations/resources/app_colors.dart';
 import 'package:ye_hraj/presentation/custom_widgets/cus_phone_field.dart';
-import 'package:ye_hraj/presentation/custom_widgets/custom_text_field.dart';
 import 'package:ye_hraj/presentation/screens/common/common_view_model.dart';
 
 import '../../../../../model/user_profile_model.dart';
 import '../../../../custom_widgets/custom_bottom_sheet/custom_bottom_sheet_list.dart';
 import '../../../../custom_widgets/custom_text.dart';
+import 'custom_widgets/auth_field_label.dart';
+import 'custom_widgets/auth_text_field.dart';
+import 'custom_widgets/profile_image_picker.dart';
 import 'phoneVirev.dart';
 import 'register_view_model.dart';
 
@@ -57,7 +59,19 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    // 3) صفر حالة الـ OTP ثم انتقل + ابدأ الإرسال بالتوازي
+    // 🇾🇪 الأرقام اليمنية (+967): تخطّي التحقق بالـ OTP والتسجيل مباشرة.
+    //    (مؤقت لحين تغيير طريقة التحقق للأرقام اليمنية لاحقاً.)
+    if (registerViewModel.isYemeniNumber) {
+      registerViewModel.markPhoneVerifiedWithoutOtp();
+      if (widget.isEditing) {
+        await registerViewModel.updateProfile(context);
+      } else {
+        await registerViewModel.register(context);
+      }
+      return;
+    }
+
+    // 3) باقي الدول: صفّر حالة الـ OTP ثم انتقل + ابدأ الإرسال بالتوازي
     registerViewModel.resetOtpState();
 
     if (!mounted) return;
@@ -104,70 +118,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // --- 1. اختيار الصورة الشخصية ---
-            Center(
-              child: GestureDetector(
-                onTap: registerViewModel.pickImage,
-                child: Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    Container(
-                      width: 100,
-                      height: 100,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE1E8EF),
-                        shape: BoxShape.circle,
-                        image: registerViewModel.personalPhoto != null
-                            ? DecorationImage(
-                          image: FileImage(
-                            registerViewModel.personalPhoto!,
-                          ),
-                          fit: BoxFit.cover,
-                        )
-                            : (widget.isEditing &&
-                            registerViewModel.existingImageUrl !=
-                                null &&
-                            registerViewModel
-                                .existingImageUrl!.isNotEmpty)
-                            ? DecorationImage(
-                          image: NetworkImage(
-                            registerViewModel.existingImageUrl!,
-                          ),
-                          fit: BoxFit.cover,
-                        )
-                            : null,
-                      ),
-                      child: (registerViewModel.personalPhoto == null &&
-                          (registerViewModel.existingImageUrl == null ||
-                              registerViewModel.existingImageUrl!.isEmpty))
-                          ? const Icon(
-                        Icons.person,
-                        size: 50,
-                        color: Colors.white,
-                      )
-                          : null,
-                    ),
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.current.primary,
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.camera_alt,
-                        size: 16,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            ProfileImagePicker(
+              onTap: registerViewModel.pickImage,
+              personalPhoto: registerViewModel.personalPhoto,
+              existingImageUrl:
+                  widget.isEditing ? registerViewModel.existingImageUrl : null,
             ),
 
             const SizedBox(height: 20),
 
             if (!widget.isEditing) ...[
-              _buildLabel(context, 'اسم المستخدم', isRequired: true),
-              _buildTextField(
+              const AuthFieldLabel(text: 'اسم المستخدم', isRequired: true),
+              AuthTextField(
                 controller: registerViewModel.emailController,
                 hint: 'أدخل اسم المستخدم',
                 keyboardType: TextInputType.emailAddress,
@@ -176,12 +138,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(height: 16),
             ],
 
-            _buildLabel(
-              context,
-              widget.isEditing ? 'كلمة المرور الجديدة' : 'كلمة المرور',
+            AuthFieldLabel(
+              text: widget.isEditing ? 'كلمة المرور الجديدة' : 'كلمة المرور',
               isRequired: !widget.isEditing,
             ),
-            _buildTextField(
+            AuthTextField(
               controller: registerViewModel.passwordController,
               hint: widget.isEditing
                   ? 'اتركه فارغاً إذا لم ترد تغييره'
@@ -200,8 +161,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 10),
 
-            _buildLabel(context, 'اسمك الكامل', isRequired: true),
-            _buildTextField(
+            const AuthFieldLabel(text: 'اسمك الكامل', isRequired: true),
+            AuthTextField(
               controller: registerViewModel.nameController,
               hint: 'محمد عبدالله',
             ),
@@ -210,7 +171,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
             // ==========================================
             // 🔥 رقم الهاتف فقط (بدون OTP داخل الصفحة)
             // ==========================================
-            // _buildLabel(context, 'رقم الهاتف', isRequired: true),
             CusPhoneField(
               onDropdownChanged: registerViewModel.setPhoneCountryCode,
               phoneCuntry: registerViewModel.phoneCuntry,
@@ -220,15 +180,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
 
             const SizedBox(height: 10),
-            _buildLabel(context, 'نبذة عنك (Bio)'),
-            _buildTextField(
+            const AuthFieldLabel(text: 'نبذة عنك (Bio)'),
+            AuthTextField(
               controller: registerViewModel.bioController,
               hint: 'اكتب شيئاً عنك...',
               maxLines: 3,
             ),
             const SizedBox(height: 10),
 
-            _buildLabel(context, 'المدينة', isRequired: false),
+            const AuthFieldLabel(text: 'المدينة', isRequired: true),
             CustomBottomSheetWithSearch(
               cotx: context,
               bottomSheetTitle: 'اختر المدينة',
@@ -246,6 +206,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             const SizedBox(height: 10),
 
+            const AuthFieldLabel(text: 'المنطقة', isRequired: true),
             CustomBottomSheetWithSearch(
               cotx: context,
               bottomSheetTitle: 'اختر المنطقة',
@@ -303,52 +264,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
-  Widget _buildLabel(
-      BuildContext context,
-      String text, {
-        bool isRequired = false,
-      }) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 4.0),
-      child: Row(
-        children: [
-          CustomText(
-            title: text,
-            size: Theme.of(context).textTheme.bodySmall!.fontSize! - 2,
-            fontWeight: FontWeight.w800,
-            color: const Color(0xFF0F162A),
-          ),
-          isRequired
-              ? const Text(' *', style: TextStyle(color: Colors.red))
-              : CustomText(
-            title: '  (إختياري)  ',
-            size: Theme.of(context).textTheme.bodySmall!.fontSize! - 3,
-            fontWeight: FontWeight.w800,
-            color: Colors.grey,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hint,
-    bool obscureText = false,
-    TextInputType keyboardType = TextInputType.text,
-    int maxLines = 1,
-    bool readOnly = false,
-    Widget? suffixIcon,
-  }) {
-    return CustomTextField(
-      controller: controller,
-      obscureText: obscureText,
-      type: keyboardType,
-      linesNumber: maxLines,
-      readOnly: readOnly,
-      hint: hint,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      suffixIcon: suffixIcon,
-    );
-  }
 }

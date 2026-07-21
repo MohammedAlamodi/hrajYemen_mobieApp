@@ -28,6 +28,8 @@ class ProductModel {
   final bool isActive;
   final bool isBlocked;
   final bool isFavorite;
+  final bool allowCall; // هل يسمح المالك بالاتصال؟
+  final bool allowChat; // هل يسمح المالك بالمراسلة؟
   final String? mainImageUrl;
   final int viewsCount;
   final DateTime createdAt;
@@ -61,6 +63,8 @@ class ProductModel {
     required this.isBlocked,
     required this.isActive,
     required this.isFavorite,
+    this.allowCall = true,
+    this.allowChat = true,
     this.mainImageUrl,
     required this.viewsCount,
     required this.createdAt,
@@ -116,16 +120,14 @@ class ProductModel {
       isActive: json['isActive'] ?? true,
       isBlocked: json['isBlocked'] ?? false,
       isFavorite: json['isFavorite'] ?? false,
+      allowCall: json['allowCall'] ?? true,
+      allowChat: json['allowChat'] ?? true,
       mainImageUrl: mainImage,
       viewsCount: json['viewsCount'] ?? 0,
 
-      createdAt: json['createdAt'] != null
-          ? DateTime.parse(json['createdAt'])
-          : DateTime.now(),
+      createdAt: parseServerDateTime(json['createdAt']),
 
-      updateAt: json['updateAt'] != null
-          ? DateTime.parse(json['updateAt'])
-          : DateTime.now(),
+      updateAt: parseServerDateTime(json['updateAt']),
       images: parsedImages,
       comments:
           (json['comments'] as List<dynamic>?)
@@ -167,6 +169,42 @@ class ProductModel {
     };
   }
 
+  /// تسلسل كامل (غير ناقص) مخصّص للتخزين في الكاش.
+  /// يستخدم نفس مفاتيح [fromJson] ليتم استرجاع الكائن بنفس حالته تماماً
+  /// (على عكس [toJson] المخصّص للإرسال للسيرفر والذي يحذف بعض الحقول).
+  Map<String, dynamic> toCacheJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'price': price,
+      'condition': condition,
+      'priceCurrency': priceCurrency,
+      'categoryName': categoryName,
+      'subCategoryName': subCategoryName,
+      'cityName': cityName,
+      'regionName': regionName,
+      'userName': userName,
+      'userImageUrl': userProfileImageUrl,
+      'categoryId': categoryId,
+      'subCategoryId': subCategoryId,
+      'cityId': cityId,
+      'regionId': regionId,
+      'isActive': isActive,
+      'isBlocked': isBlocked,
+      'isFavorite': isFavorite,
+      'allowCall': allowCall,
+      'allowChat': allowChat,
+      // نخزّن الرابط الكامل كما هو؛ لن يضيف fromJson الدومين لأنه لا يبدأ بـ '/'
+      'mainImageUrl': mainImageUrl,
+      'viewsCount': viewsCount,
+      // نخزّن بتوقيت UTC (بعلامة Z) ليُسترجع بشكل صحيح من الكاش
+      'createdAt': createdAt.toUtc().toIso8601String(),
+      'updateAt': updateAt.toUtc().toIso8601String(),
+      'images': images.map((e) => e.toJson()).toList(),
+    };
+  }
+
   // توليد الخصائص للواجهة بناءً على البيانات القادمة
   Map<String, String> get attributes {
     return {
@@ -183,11 +221,37 @@ class ProductModel {
   }
 }
 
+/// تحويل تاريخ السيرفر إلى وقت محلي صحيح.
+/// السيرفر يرسل الوقت بتوقيت UTC لكن بدون علامة منطقة زمنية،
+/// فيفسّره Dart كتوقيت محلي (فيظهر فرق ثابت = فرق التوقيت، مثلاً 3 ساعات).
+/// الحل: نعيد تفسيره كـ UTC ثم نحوّله للتوقيت المحلي.
+DateTime parseServerDateTime(dynamic value) {
+  if (value == null) return DateTime.now();
+  try {
+    final String str = value.toString();
+    DateTime dt = DateTime.parse(str);
+
+    final bool hasTimeZone =
+        str.endsWith('Z') || RegExp(r'[+\-]\d{2}:?\d{2}$').hasMatch(str);
+
+    if (!dt.isUtc && !hasTimeZone) {
+      dt = DateTime.utc(dt.year, dt.month, dt.day, dt.hour, dt.minute,
+          dt.second, dt.millisecond, dt.microsecond);
+    }
+    return dt.toLocal();
+  } catch (_) {
+    return DateTime.now();
+  }
+}
+
 // دالة مساعدة لتنسيق التاريخ (يمكنك وضعها في ملف util خارجي)
 String formatTimeAgo(DateTime date) {
   final diff = DateTime.now().difference(date);
   if (diff.inDays == 0) {
-    if (diff.inHours == 0) return 'منذ ${diff.inMinutes} دقيقة';
+    if (diff.inHours == 0) {
+      if (diff.inMinutes <= 0) return 'الآن';
+      return 'منذ ${diff.inMinutes} دقيقة';
+    }
     return 'منذ ${diff.inHours} ساعة';
   } else if (diff.inDays <= 7) {
     return 'منذ ${diff.inDays} أيام';

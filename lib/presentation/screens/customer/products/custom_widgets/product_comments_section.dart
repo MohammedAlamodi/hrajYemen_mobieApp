@@ -10,8 +10,13 @@ import '../product_details_view_model.dart';
 
 class ProductCommentsSection extends StatelessWidget {
   final List<ProductCommentModel> comments;
+  final bool isExpired;
 
-  const ProductCommentsSection({Key? key, required this.comments}) : super(key: key);
+  const ProductCommentsSection({
+    Key? key,
+    required this.comments,
+    this.isExpired = false,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +63,15 @@ class ProductCommentsSection extends StatelessWidget {
           const SizedBox(height: 20),
 
           // حقل إضافة التعليق الجديد
-          if(commonViewModel.isLoggedIn) ...[
+          if (isExpired) ...[
+            const Center(
+              child: CustomText(
+                title: 'هذا الإعلان منتهي — لا يمكن التعليق',
+                color: Colors.grey,
+                size: 12,
+              ),
+            ),
+          ] else if (commonViewModel.isLoggedIn) ...[
             const _CommentInputWidget(),
           ] else ...[
             const Center(

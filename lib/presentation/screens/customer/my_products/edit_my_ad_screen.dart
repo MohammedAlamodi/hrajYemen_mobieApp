@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../../../configurations/resources/app_colors.dart';
 import '../../../../model/product_model.dart';
 import '../../../custom_widgets/Custom_header_bar.dart';
 import '../../../custom_widgets/custom_text.dart';
+import '../../../custom_widgets/en_digits_input_formatter.dart';
 import 'my_ad_view_model.dart';
 
 class EditAdScreen extends StatefulWidget {
@@ -73,6 +75,7 @@ class _EditAdScreenState extends State<EditAdScreen> {
                           child: _buildTextField(
                             vm.priceController,
                             isNumber: true,
+                            inputFormatters: [EnglishDigitsInputFormatter()],
                           ),
                         ),
 
@@ -121,15 +124,74 @@ class _EditAdScreenState extends State<EditAdScreen> {
 
                     const SizedBox(height: 16),
 
-                    // الوصف
+                    // الوصف (متعدد الأسطر وينمو للأسفل)
                     _buildLabel('الوصف'),
-                    _buildTextField(vm.descController, maxLines: 5),
+                    _buildTextField(
+                      vm.descController,
+                      multiline: true,
+                      minLines: 5,
+                      maxLines: null,
+                    ),
 
                     const SizedBox(height: 16),
 
                     // الموقع (يمكن جعله Dropdown لاحقاً)
                     _buildLabel('الموقع'),
                     _buildTextField(vm.locationController),
+
+                    const SizedBox(height: 16),
+
+                    // السماح بالمراسلة (true/false)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE1E8EF)),
+                      ),
+                      child: SwitchListTile(
+                        value: vm.allowChat,
+                        onChanged: vm.setAllowChat,
+                        activeColor: AppColors.current.primary,
+                        title: CustomText(
+                          title: 'السماح بالمراسلة',
+                          size: 14,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F162A),
+                        ),
+                        subtitle: const CustomText(
+                          title: 'عند الإيقاف لن يتمكّن المشترون من مراسلتك',
+                          size: 11,
+                          color: Color(0xFF63748A),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // السماح بالاتصال (true/false)
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE1E8EF)),
+                      ),
+                      child: SwitchListTile(
+                        value: vm.allowCall,
+                        onChanged: vm.setAllowCall,
+                        activeColor: AppColors.current.primary,
+                        title: CustomText(
+                          title: 'السماح بالاتصال',
+                          size: 14,
+                          fontWeight: FontWeight.w800,
+                          color: const Color(0xFF0F162A),
+                        ),
+                        subtitle: const CustomText(
+                          title: 'عند الإيقاف لن يظهر رقمك ولن يتمكّن المشترون من الاتصال بك',
+                          size: 11,
+                          color: Color(0xFF63748A),
+                        ),
+                      ),
+                    ),
 
                     const SizedBox(height: 24),
 
@@ -273,9 +335,15 @@ class _EditAdScreenState extends State<EditAdScreen> {
   Widget _buildTextField(
     TextEditingController controller, {
     String? suffix,
-    int maxLines = 1,
+    int? maxLines = 1,
+    int? minLines,
     bool isNumber = false,
+    bool multiline = false,
+    List<TextInputFormatter>? inputFormatters,
   }) {
+    final TextInputType keyboardType = multiline
+        ? TextInputType.multiline
+        : (isNumber ? TextInputType.number : TextInputType.text);
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -285,7 +353,11 @@ class _EditAdScreenState extends State<EditAdScreen> {
       child: TextFormField(
         controller: controller,
         maxLines: maxLines,
-        keyboardType: isNumber ? TextInputType.number : TextInputType.text,
+        minLines: minLines,
+        inputFormatters: inputFormatters,
+        keyboardType: keyboardType,
+        textInputAction:
+            multiline ? TextInputAction.newline : TextInputAction.done,
         style: const TextStyle(
           fontFamily: 'Expo Arabic',
           fontSize: 14,
